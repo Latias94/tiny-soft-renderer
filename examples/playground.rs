@@ -10,15 +10,10 @@ fn main() {
 }
 
 fn draw(renderer: &mut Renderer) {
-    // renderer.clear();
-    for x in 0..renderer.width() {
-        let r = (x as f32 / renderer.width() as f32 * 255.0) as u8;
-        let b = 0;
-        for y in 0..renderer.height() {
-            let g = (y as f32 / renderer.height() as f32 * 255.0) as u8;
-            renderer.set_pixel(x, y, Color::rgb(r, g, b));
-        }
-    }
+    renderer.clear(Color::BLACK);
+    renderer.draw_line(13, 20, 80, 40, Color::WHITE);
+    renderer.draw_line(20, 13, 40, 80, Color::RED);
+    renderer.draw_line(80, 40, 13, 20, Color::RED);
 }
 
 fn redraw(texture: &mut sdl2::render::Texture, renderer: &Renderer) {
@@ -55,7 +50,7 @@ fn run() {
         .create_texture_target(PixelFormatEnum::RGB24, renderer_width, renderer_height)
         .unwrap();
 
-    let mut renderer = Renderer::new(renderer_width, renderer_height);
+    let mut renderer = Renderer::new(renderer_width, renderer_height, true);
 
     // draw once temporarily
     draw(&mut renderer);
