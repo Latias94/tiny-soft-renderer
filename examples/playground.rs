@@ -11,9 +11,41 @@ fn main() {
 
 fn draw(renderer: &mut Renderer) {
     renderer.clear(Color::BLACK);
-    renderer.draw_line(13, 20, 80, 40, Color::WHITE);
-    renderer.draw_line(20, 13, 40, 80, Color::RED);
-    renderer.draw_line(80, 40, 13, 20, Color::RED);
+    let obj_file = "assets/models/african_head.obj";
+    let half_width = renderer.width() as f32 / 2.0;
+    let half_height = renderer.height() as f32 / 2.0;
+    let (models, _materials) = tobj::load_obj(obj_file, &tobj::LoadOptions::default()).unwrap();
+    for model in &models {
+        let mesh = &model.mesh;
+        let indices = &mesh.indices;
+        let positions = &mesh.positions;
+
+        for f in (0..indices.len()).step_by(3) {
+            let [v0, v1, v2] = [
+                indices[f] as usize,
+                indices[f + 1] as usize,
+                indices[f + 2] as usize,
+            ];
+
+            let coords = [v0, v1, v2].map(|v| {
+                (
+                    (positions[3 * v] * half_width + half_width) as i32, // x
+                    (positions[3 * v + 1] * half_height + half_height) as i32, // y
+                )
+            });
+
+            for i in 0..3 {
+                let (start, end) = (coords[i], coords[(i + 1) % 3]);
+                renderer.draw_line(
+                    start.0 as u32,
+                    start.1 as u32,
+                    end.0 as u32,
+                    end.1 as u32,
+                    Color::WHITE,
+                );
+            }
+        }
+    }
 }
 
 fn redraw(texture: &mut sdl2::render::Texture, renderer: &Renderer) {
@@ -25,9 +57,9 @@ fn redraw(texture: &mut sdl2::render::Texture, renderer: &Renderer) {
 }
 
 fn run() {
-    let renderer_width = 100;
-    let renderer_height = 100;
-    let window_scale = 8;
+    let renderer_width = 800;
+    let renderer_height = 800;
+    let window_scale = 1;
     let window_width = renderer_width * window_scale;
     let window_height = renderer_height * window_scale;
 

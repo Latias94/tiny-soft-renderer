@@ -36,6 +36,9 @@ impl Renderer {
     }
 
     pub fn set_pixel(&mut self, x: u32, y: u32, color: Color) {
+        if x >= self.width || y >= self.height {
+            return;
+        }
         let y = if self.flip_y { self.height - y - 1 } else { y };
         self.pixels[(y * self.width + x) as usize] = color;
         self.rgb_pixels[(y * self.width * 3 + x * 3) as usize] = color.r;
@@ -57,120 +60,35 @@ impl Renderer {
     }
 
     pub fn draw_line(&mut self, x0: u32, y0: u32, x1: u32, y1: u32, color: Color) {
-        {
-            // First attempt
-            // let dx = x1 as f32 - x0 as f32;
-            // let dy = y1 as f32 - y0 as f32;
-            //
-            // for i in 0..=100 {
-            //     let t = i as f32 / 100.0;
-            //     let x = x0 as f32 + dx * t;
-            //     let y = y0 as f32 + dy * t;
-            //     self.set_pixel(x.round() as u32, y.round() as u32, color);
-            // }
+        let mut steep = false;
+        let mut x0 = x0 as i32;
+        let mut x1 = x1 as i32;
+        let mut y0 = y0 as i32;
+        let mut y1 = y1 as i32;
+        if (x0 - x1).abs() < (y0 - y1).abs() {
+            steep = true;
+            std::mem::swap(&mut x0, &mut y0);
+            std::mem::swap(&mut x1, &mut y1);
         }
-        {
-            // Second attempt
-            // for x in x0..=x1 {
-            //     let t = (x - x0) as f32 / (x1 - x0) as f32;
-            //     let y = y0 as f32 * (1.0 - t) + y1 as f32 * t;
-            //     self.set_pixel(x, y as u32, color);
-            // }
+        if x0 > x1 {
+            std::mem::swap(&mut x0, &mut x1);
+            std::mem::swap(&mut y0, &mut y1);
         }
-        {
-            // Third attempt
-            // let mut steep = false;
-            // let mut x0 = x0 as i32;
-            // let mut x1 = x1 as i32;
-            // let mut y0 = y0 as i32;
-            // let mut y1 = y1 as i32;
-            // // if the line is steep, we transpose the image
-            // if (x0 - x1).abs() < (y0 - y1).abs() {
-            //     steep = true;
-            //     std::mem::swap(&mut x0, &mut y0);
-            //     std::mem::swap(&mut x1, &mut y1);
-            // }
-            // // make it left−to−right
-            // if x0 > x1 {
-            //     std::mem::swap(&mut x0, &mut x1);
-            //     std::mem::swap(&mut y0, &mut y1);
-            // }
-            // for x in x0..=x1 {
-            //     let t = (x - x0) as f32 / (x1 - x0) as f32;
-            //     let y = y0 as f32 * (1.0 - t) + y1 as f32 * t;
-            //     if steep {
-            //         self.set_pixel(y as u32, x as u32, color);
-            //     } else {
-            //         self.set_pixel(x as u32, y as u32, color);
-            //     }
-            // }
-        }
-        {
-            // Fourth attempt
-            // let mut steep = false;
-            // let mut x0 = x0 as i32;
-            // let mut x1 = x1 as i32;
-            // let mut y0 = y0 as i32;
-            // let mut y1 = y1 as i32;
-            // if (x0 - x1).abs() < (y0 - y1).abs() {
-            //     steep = true;
-            //     std::mem::swap(&mut x0, &mut y0);
-            //     std::mem::swap(&mut x1, &mut y1);
-            // }
-            // if x0 > x1 {
-            //     std::mem::swap(&mut x0, &mut x1);
-            //     std::mem::swap(&mut y0, &mut y1);
-            // }
-            // let dx = x1 - x0;
-            // let dy = y1 - y0;
-            // let derror = (dy as f32 / dx as f32).abs();
-            // let mut error = 0.0f32;
-            // let mut y = y0;
-            // for x in x0..=x1 {
-            //     if steep {
-            //         self.set_pixel(y as u32, x as u32, color);
-            //     } else {
-            //         self.set_pixel(x as u32, y as u32, color);
-            //     }
-            //     error += derror;
-            //     if error > 0.5 {
-            //         y += if y1 > y0 { 1 } else { -1 };
-            //         error -= 1.0;
-            //     }
-            // }
-        }
-        {
-            // Fifth attempt
-            let mut steep = false;
-            let mut x0 = x0 as i32;
-            let mut x1 = x1 as i32;
-            let mut y0 = y0 as i32;
-            let mut y1 = y1 as i32;
-            if (x0 - x1).abs() < (y0 - y1).abs() {
-                steep = true;
-                std::mem::swap(&mut x0, &mut y0);
-                std::mem::swap(&mut x1, &mut y1);
+        let dx = x1 - x0;
+        let dy = y1 - y0;
+        let derror2 = dy.abs() * 2;
+        let mut error2 = 0;
+        let mut y = y0;
+        for x in x0..=x1 {
+            if steep {
+                self.set_pixel(y as u32, x as u32, color);
+            } else {
+                self.set_pixel(x as u32, y as u32, color);
             }
-            if x0 > x1 {
-                std::mem::swap(&mut x0, &mut x1);
-                std::mem::swap(&mut y0, &mut y1);
-            }
-            let dx = x1 - x0;
-            let dy = y1 - y0;
-            let derror2 = dy.abs() * 2;
-            let mut error2 = 0;
-            let mut y = y0;
-            for x in x0..=x1 {
-                if steep {
-                    self.set_pixel(y as u32, x as u32, color);
-                } else {
-                    self.set_pixel(x as u32, y as u32, color);
-                }
-                error2 += derror2;
-                if error2 > dx {
-                    y += if y1 > y0 { 1 } else { -1 };
-                    error2 -= dx * 2;
-                }
+            error2 += derror2;
+            if error2 > dx {
+                y += if y1 > y0 { 1 } else { -1 };
+                error2 -= dx * 2;
             }
         }
     }
