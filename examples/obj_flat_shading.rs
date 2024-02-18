@@ -2,7 +2,7 @@ mod common;
 
 use sdl2::keyboard::Scancode;
 use tiny_soft_renderer::color::Color;
-use tiny_soft_renderer::math::{Vec2u, Vec3f};
+use tiny_soft_renderer::math::{Vec2u, Vec3f, Vec3u};
 use tiny_soft_renderer::renderer::Renderer;
 use tobj::Model;
 
@@ -69,9 +69,10 @@ fn draw(model: &Model, renderer: &mut Renderer, draw_mode: DrawMode) {
             z: positions[3 * v + 2],
         });
 
-        let screen_coords = world_coords.map(|v| Vec2u {
-            x: ((v.x + 1.0) * half_width) as u32,
-            y: ((v.y + 1.0) * half_height) as u32,
+        let screen_coords = world_coords.map(|v| Vec3f {
+            x: (v.x + 1.0) * half_width,
+            y: (v.y + 1.0) * half_height,
+            z: v.z,
         });
 
         match draw_mode {
@@ -104,9 +105,13 @@ fn draw(model: &Model, renderer: &mut Renderer, draw_mode: DrawMode) {
                 );
             }
             DrawMode::Wireframe => {
-                renderer.draw_line(&screen_coords[0], &screen_coords[1], Color::WHITE);
-                renderer.draw_line(&screen_coords[1], &screen_coords[2], Color::WHITE);
-                renderer.draw_line(&screen_coords[2], &screen_coords[0], Color::WHITE);
+                let screen_coords_2d = screen_coords.map(|v| Vec2u {
+                    x: v.x as u32,
+                    y: v.y as u32,
+                });
+                renderer.draw_line(&screen_coords_2d[0], &screen_coords_2d[1], Color::WHITE);
+                renderer.draw_line(&screen_coords_2d[1], &screen_coords_2d[2], Color::WHITE);
+                renderer.draw_line(&screen_coords_2d[2], &screen_coords_2d[0], Color::WHITE);
             }
         }
     }

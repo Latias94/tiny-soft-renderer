@@ -1,5 +1,5 @@
 use bytemuck::{Pod, Zeroable};
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign};
 
 pub trait ToFloat32 {
     fn to_f32(&self) -> f32;
@@ -257,6 +257,10 @@ impl_vec_type_conversion!(Vec2, u32, f32, x, y);
 impl_vec_type_conversion!(Vec3, u32, f32, x, y, z);
 impl_vec_type_conversion!(Vec4, u32, f32, x, y, z, w);
 
+impl_vec_type_conversion!(Vec2, f32, u32, x, y);
+impl_vec_type_conversion!(Vec3, f32, u32, x, y, z);
+impl_vec_type_conversion!(Vec4, f32, u32, x, y, z, w);
+
 impl<T: Number> Vec3<T> {
     pub fn cross(self, rhs: &Self) -> Self {
         Vec3 {
@@ -297,6 +301,43 @@ macro_rules! impl_vec_f32_func {
 impl_vec_f32_func!(Vec2, x, y);
 impl_vec_f32_func!(Vec3, x, y, z);
 impl_vec_f32_func!(Vec4, x, y, z, w);
+
+macro_rules! impl_index_and_get_for_vec {
+    ($VecType:ident, $T:ty, $($index:expr => $field:ident),+) => {
+        impl<T: Number> Index<usize> for $VecType<T> {
+            type Output = T;
+
+            fn index(&self, index: usize) -> &Self::Output {
+                match index {
+                    $( $index => &self.$field, )+
+                    _ => panic!("Index out of bounds"),
+                }
+            }
+        }
+
+        impl<T: Number> IndexMut<usize> for $VecType<T> {
+            fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+                match index {
+                    $( $index => &mut self.$field, )+
+                    _ => panic!("Index out of bounds"),
+                }
+            }
+        }
+
+        impl<T: Number> $VecType<T> {
+            pub fn get(&self, index: usize) -> &T {
+                match index {
+                    $( $index => &self.$field, )+
+                    _ => panic!("Index out of bounds"),
+                }
+            }
+        }
+    };
+}
+
+impl_index_and_get_for_vec!(Vec2, T, 0 => x, 1 => y);
+impl_index_and_get_for_vec!(Vec3, T, 0 => x, 1 => y, 2 => z);
+impl_index_and_get_for_vec!(Vec4, T, 0 => x, 1 => y, 2 => z, 3 => w);
 
 #[cfg(test)]
 #[rustfmt::skip]
@@ -369,6 +410,10 @@ mod tests {
         let vec = Vec2u { x: 1, y: 2 };
         let vec_f32: Vec2f = vec.into();
         assert_eq!(vec_f32, Vec2 { x: 1.0, y: 2.0 });
+
+        let vec = Vec2f { x: 1.1, y: 2.0 };
+        let vec_u32: Vec2u = vec.into();
+        assert_eq!(vec_u32, Vec2 { x: 1, y: 2 });
     }
 
     #[test]
@@ -389,5 +434,20 @@ mod tests {
         let vec1 = Vec2 { x: 1, y: 2 };
         let vec2 = Vec2 { x: 3, y: 4 };
         assert_eq!(vec1.dot(&vec2), 11.0);
+    }
+
+    #[test]
+    fn test_vec_index_and_get() {
+        let vec = Vec2 { x: 1, y: 2 };
+        assert_eq!(vec[0], 1);
+        assert_eq!(vec[1], 2);
+
+        let mut vec = Vec2 { x: 1, y: 2 };
+        vec[0] = 3;
+        vec[1] = 4;
+        assert_eq!(vec, Vec2 { x: 3, y: 4 });
+
+        assert_eq!(vec.get(0), &3);
+        assert_eq!(vec.get(1), &4);
     }
 }

@@ -1,5 +1,5 @@
 use crate::color::Color;
-use crate::math::{Vec2u, Vec3};
+use crate::math::{Vec2f, Vec2u, Vec3, Vec3f};
 
 pub struct Renderer {
     width: u32,
@@ -16,7 +16,7 @@ impl Renderer {
             height,
             flip_y,
             pixels: vec![Color::WHITE; (width * height) as usize],
-            y_buffer: vec![-i32::MAX; width as usize],
+            y_buffer: vec![-i32::MAX; (width * height) as usize],
         }
     }
 
@@ -51,7 +51,7 @@ impl Renderer {
 
     pub fn clear(&mut self, color: Color) {
         self.pixels = vec![color; (self.width * self.height) as usize];
-        self.y_buffer = vec![-i32::MAX; self.width as usize];
+        self.y_buffer = vec![-i32::MAX; (self.width * self.height) as usize];
     }
 
     pub fn draw_line(&mut self, v0: &Vec2u, v1: &Vec2u, color: Color) {
@@ -88,81 +88,68 @@ impl Renderer {
         }
     }
 
-    pub fn barycentric(t0: &Vec2u, t1: &Vec2u, t2: &Vec2u, p: &Vec2u) -> Vec3<f32> {
-        let u = Vec3 {
-            x: t2.x as f32 - t0.x as f32,
-            y: t1.x as f32 - t0.x as f32,
-            z: t0.x as f32 - p.x as f32,
+    pub fn barycentric(t0: &Vec3f, t1: &Vec3f, t2: &Vec3f, p: &Vec3f) -> Vec3<f32> {
+        let mut s = [Vec3f::default(); 2];
+        for i in 0..2 {
+            s[i].x = t2[i] - t0[i];
+            s[i].y = t1[i] - t0[i];
+            s[i].z = t0[i] - p[i];
         }
-        .cross(&Vec3 {
-            x: t2.y as f32 - t0.y as f32,
-            y: t1.y as f32 - t0.y as f32,
-            z: t0.y as f32 - p.y as f32,
-        });
-
-        /* `pts` and `P` has integer value as coordinates
-        so `abs(u[2])` < 1 means `u[2]` is 0, that means
-        triangle is degenerate, in this case return something with negative coordinates */
-        if u.z.abs() < 1.0 {
-            return Vec3 {
+        let u = s[0].cross(&s[1]);
+        // dont forget that u[2] is integer. If it is zero then triangle ABC is degenerate
+        if u.z.abs() > 1e-2 {
+            Vec3 {
+                x: 1.0 - (u.x + u.y) / u.z,
+                y: u.y / u.z,
+                z: u.x / u.z,
+            }
+        } else {
+            // in this case generate negative coordinates, it will be thrown away by the rasterizator
+            Vec3 {
                 x: -1.0,
                 y: 1.0,
                 z: 1.0,
-            };
-        }
-        Vec3 {
-            x: 1.0 - (u.x + u.y) / u.z,
-            y: u.y / u.z,
-            z: u.x / u.z,
-        }
-    }
-
-    pub fn draw_triangle(&mut self, t0: &Vec2u, t1: &Vec2u, t2: &Vec2u, color: Color) {
-        let mut bbox_min = Vec2u {
-            x: self.width - 1,
-            y: self.height - 1,
-        };
-        let mut bbox_max = Vec2u { x: 0, y: 0 };
-        let clamp = Vec2u {
-            x: self.width - 1,
-            y: self.height - 1,
-        };
-        let pts = [t0, t1, t2];
-        for pt in pts {
-            bbox_min.x = bbox_min.x.min(pt.x);
-            bbox_min.y = bbox_min.y.min(pt.y);
-            bbox_max.x = bbox_max.x.max(pt.x);
-            bbox_max.y = bbox_max.y.max(pt.y);
-        }
-        for x in bbox_min.x..=bbox_max.x {
-            for y in bbox_min.y..=bbox_max.y {
-                let bc_screen = Renderer::barycentric(t0, t1, t2, &Vec2u { x, y });
-                if bc_screen.x < 0.0 || bc_screen.y < 0.0 || bc_screen.z < 0.0 {
-                    continue;
-                }
-                let x = x.min(clamp.x);
-                let y = y.min(clamp.y);
-                self.draw_pixel(x, y, color);
             }
         }
     }
 
-    pub fn rasterize(&mut self, p0: &Vec2u, p1: &Vec2u, color: Color) {
-        let mut p0 = *p0;
-        let mut p1 = *p1;
-        if p0.x > p1.x {
-            std::mem::swap(&mut p0, &mut p1);
+    pub fn draw_triangle(&mut self, t0: &Vec3f, t1: &Vec3f, t2: &Vec3f, color: Color) {
+        let mut bbox_min = Vec2f {
+            x: f32::MAX,
+            y: f32::MAX,
+        };
+        let mut bbox_max = Vec2f {
+            x: -f32::MAX,
+            y: -f32::MAX,
+        };
+        let clamp = Vec2f {
+            x: self.width as f32 - 1.0,
+            y: self.height as f32 - 1.0,
+        };
+        let pts = [t0, t1, t2];
+        for pt in pts {
+            bbox_min.x = bbox_min.x.min(pt.x).max(0.0);
+            bbox_min.y = bbox_min.y.min(pt.y).max(0.0);
+            bbox_max.x = bbox_max.x.max(pt.x).min(clamp.x);
+            bbox_max.y = bbox_max.y.max(pt.y).min(clamp.y);
         }
-        for x in p0.x..=p1.x {
-            let t = if p1.x == p0.x {
-                1.0
-            } else {
-                (x - p0.x) as f32 / (p1.x - p0.x) as f32
-            };
-            let y = p0.y as f32 * (1.0 - t) + p1.y as f32 * t;
-            if self.y_buffer[x as usize] < y as i32 {
-                self.y_buffer[x as usize] = y as i32;
-                self.draw_pixel(x, 0, color);
+        for x in bbox_min.x as u32..=bbox_max.x as u32 {
+            for y in bbox_min.y as u32..=bbox_max.y as u32 {
+                let p = Vec3f {
+                    x: x as f32,
+                    y: y as f32,
+                    z: 0.0,
+                };
+                let bc_screen = Renderer::barycentric(t0, t1, t2, &p);
+
+                if bc_screen.x < 0.0 || bc_screen.y < 0.0 || bc_screen.z < 0.0 {
+                    continue;
+                }
+                let index = (y * self.width + x) as usize;
+                if self.y_buffer[index] < p.z as i32 {
+                    self.y_buffer[index] = p.z as i32;
+                    self.draw_pixel(x, y, color);
+                }
             }
         }
     }
@@ -170,18 +157,19 @@ impl Renderer {
 
 #[allow(unused_imports)]
 mod tests {
-    use crate::math::Vec3;
+    use crate::math::{Vec3, Vec3u};
 
     #[test]
     fn test_barycentric() {
         use crate::math::Vec2u;
         use crate::renderer::Renderer;
-        let t0 = Vec2u { x: 0, y: 0 };
-        let t1 = Vec2u { x: 50, y: 0 };
-        let t2 = Vec2u { x: 0, y: 50 };
-        let p = Vec2u { x: 10, y: 10 };
+        let t0 = Vec3u { x: 0, y: 0, z: 0 };
+        let t1 = Vec3u { x: 50, y: 0, z: 0 };
+        let t2 = Vec3u { x: 0, y: 50, z: 0 };
+        let p = Vec3u { x: 10, y: 10, z: 0 };
 
-        let barycentric_coords = Renderer::barycentric(&t0, &t1, &t2, &p);
+        let barycentric_coords =
+            Renderer::barycentric(&t0.into(), &t1.into(), &t2.into(), &p.into());
         assert_eq!(
             barycentric_coords,
             Vec3 {
