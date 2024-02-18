@@ -30,7 +30,7 @@ fn draw(renderer: &mut Renderer) {
         Vec2u { x: 120, y: 160 },
         Vec2u { x: 130, y: 180 },
     ];
-    renderer.triangle(t0[0], t0[1], t0[2], Color::RED);
-    renderer.triangle(t1[0], t1[1], t1[2], Color::WHITE);
-    renderer.triangle(t2[0], t2[1], t2[2], Color::GREEN);
+    renderer.triangle(&t0[0], &t0[1], &t0[2], Color::RED);
+    renderer.triangle(&t1[0], &t1[1], &t1[2], Color::WHITE);
+    renderer.triangle(&t2[0], &t2[1], &t2[2], Color::GREEN);
 }

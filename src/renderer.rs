@@ -1,5 +1,5 @@
 use crate::color::Color;
-use crate::math::{Vec2i, Vec2u};
+use crate::math::Vec2u;
 
 pub struct Renderer {
     width: u32,
@@ -51,12 +51,12 @@ impl Renderer {
         self.pixels = vec![color; (self.width * self.height) as usize];
     }
 
-    pub fn draw_line(&mut self, x0: u32, y0: u32, x1: u32, y1: u32, color: Color) {
+    pub fn draw_line(&mut self, v0: &Vec2u, v1: &Vec2u, color: Color) {
         let mut steep = false;
-        let mut x0 = x0 as i32;
-        let mut x1 = x1 as i32;
-        let mut y0 = y0 as i32;
-        let mut y1 = y1 as i32;
+        let mut x0 = v0.x as i32;
+        let mut x1 = v1.x as i32;
+        let mut y0 = v0.y as i32;
+        let mut y1 = v1.y as i32;
         if (x0 - x1).abs() < (y0 - y1).abs() {
             steep = true;
             std::mem::swap(&mut x0, &mut y0);
@@ -85,9 +85,21 @@ impl Renderer {
         }
     }
 
-    pub fn triangle(&mut self, t0:Vec2u, t1:Vec2u, t2:Vec2u, color: Color) {
-        self.draw_line(t0.x, t0.y, t1.x, t1.y, color);
-        self.draw_line(t1.x, t1.y, t2.x, t2.y, color);
-        self.draw_line(t2.x, t2.y, t0.x, t0.y, color);
+    pub fn triangle(&mut self, t0: &Vec2u, t1: &Vec2u, t2: &Vec2u, _color: Color) {
+        let mut t0 = *t0;
+        let mut t1 = *t1;
+        let mut t2 = *t2;
+        if t0.y > t1.y {
+            std::mem::swap(&mut t0, &mut t1);
+        }
+        if t0.y > t2.y {
+            std::mem::swap(&mut t0, &mut t2);
+        }
+        if t1.y > t2.y {
+            std::mem::swap(&mut t1, &mut t2);
+        }
+        self.draw_line(&t0, &t1, Color::GREEN);
+        self.draw_line(&t1, &t2, Color::GREEN);
+        self.draw_line(&t2, &t0, Color::RED);
     }
 }

@@ -1,6 +1,7 @@
 mod common;
 
 use tiny_soft_renderer::color::Color;
+use tiny_soft_renderer::math::Vec2u;
 use tiny_soft_renderer::renderer::Renderer;
 
 fn main() {
@@ -42,22 +43,14 @@ fn draw(renderer: &mut Renderer) {
                 indices[f + 2] as usize,
             ];
 
-            let coords = [v0, v1, v2].map(|v| {
-                (
-                    (positions[3 * v] * half_width + half_width) as i32, // x
-                    (positions[3 * v + 1] * half_height + half_height) as i32, // y
-                )
+            let coords = [v0, v1, v2].map(|v| Vec2u {
+                x: ((positions[3 * v] + 1.0) * half_width) as u32,
+                y: ((positions[3 * v + 1] + 1.0) * half_height) as u32,
             });
 
             for i in 0..3 {
                 let (start, end) = (coords[i], coords[(i + 1) % 3]);
-                renderer.draw_line(
-                    start.0 as u32,
-                    start.1 as u32,
-                    end.0 as u32,
-                    end.1 as u32,
-                    Color::WHITE,
-                );
+                renderer.draw_line(&start, &end, Color::WHITE);
             }
         }
     }
