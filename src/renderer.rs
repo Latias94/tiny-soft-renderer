@@ -85,7 +85,7 @@ impl Renderer {
         }
     }
 
-    pub fn triangle(&mut self, t0: &Vec2u, t1: &Vec2u, t2: &Vec2u, _color: Color) {
+    pub fn triangle(&mut self, t0: &Vec2u, t1: &Vec2u, t2: &Vec2u, color: Color) {
         let mut t0: Vec2<f32> = (*t0).into();
         let mut t1: Vec2<f32> = (*t1).into();
         let mut t2: Vec2<f32> = (*t2).into();
@@ -101,15 +101,27 @@ impl Renderer {
         let total_height = t2.y - t0.y;
         let t0y = t0.y as i32;
         let t1y = t1.y as i32;
-        for y in t0y..=t1y {
-            let y = y as f32;
-            let segment_height = t1.y - t0.y + 1.0;
-            let alpha = (y - t0.y) / total_height;
-            let beta = (y - t0.y) / segment_height;
-            let a = t0 + (t2 - t0) * alpha;
-            let b = t0 + (t1 - t0) * beta;
-            self.draw_pixel(a.x as u32, y as u32, Color::RED);
-            self.draw_pixel(b.x as u32, y as u32, Color::GREEN);
+        for i in 0..total_height as i32 {
+            let second_half = i > t1y - t0y || t1y == t0y;
+            let segment_height = if second_half {
+                t2.y - t1.y
+            } else {
+                t1.y - t0.y
+            };
+            let alpha = i as f32 / total_height;
+            let beta = (i as f32 - if second_half { t1.y - t0.y } else { 0.0 }) / segment_height;
+            let mut a = t0 + (t2 - t0) * alpha;
+            let mut b = if second_half {
+                t1 + (t2 - t1) * beta
+            } else {
+                t0 + (t1 - t0) * beta
+            };
+            if a.x > b.x {
+                std::mem::swap(&mut a, &mut b);
+            }
+            for j in a.x as i32..=b.x as i32 {
+                self.draw_pixel(j as u32, (t0y + i) as u32, color);
+            }
         }
     }
 }
