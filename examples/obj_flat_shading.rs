@@ -1,0 +1,95 @@
+mod common;
+
+use sdl2::keyboard::Scancode;
+use tiny_soft_renderer::color::Color;
+use tiny_soft_renderer::math::{Vec2u, Vec3f};
+use tiny_soft_renderer::renderer::Renderer;
+use tobj::Model;
+
+fn main() {
+    let title = "Playground, press space to change shading mode";
+    let width = 800;
+    let height = 800;
+    let window_scale = 1;
+    let mut renderer = Renderer::new(width, height, true);
+    let obj_file = "assets/models/african_head.obj";
+    let (models, _materials) = tobj::load_obj(obj_file, &tobj::LoadOptions::default()).unwrap();
+    let model = &models[0];
+    common::run(
+        title,
+        width,
+        height,
+        window_scale,
+        &mut renderer,
+        |renderer, window| {
+            let random_color = window.is_key_pressed(Scancode::Space);
+            draw(model, renderer, random_color);
+        },
+    )
+    .unwrap();
+}
+
+fn draw(model: &Model, renderer: &mut Renderer, random_color: bool) {
+    renderer.clear(Color::BLACK);
+    let half_width = renderer.width() as f32 / 2.0;
+    let half_height = renderer.height() as f32 / 2.0;
+
+    let mesh = &model.mesh;
+    let indices = &mesh.indices;
+    let positions = &mesh.positions;
+
+    let light_dir = Vec3f {
+        x: 0.0,
+        y: 0.0,
+        z: -1.0,
+    };
+
+    for f in (0..indices.len()).step_by(3) {
+        let [v0, v1, v2] = [
+            indices[f] as usize,
+            indices[f + 1] as usize,
+            indices[f + 2] as usize,
+        ];
+
+        // points of the triangle
+        let world_coords = [v0, v1, v2].map(|v| Vec3f {
+            x: positions[3 * v],
+            y: positions[3 * v + 1],
+            z: positions[3 * v + 2],
+        });
+
+        let screen_coords = world_coords.map(|v| Vec2u {
+            x: ((v.x + 1.0) * half_width) as u32,
+            y: ((v.y + 1.0) * half_height) as u32,
+        });
+
+        if random_color {
+            renderer.draw_triangle(
+                &screen_coords[0],
+                &screen_coords[1],
+                &screen_coords[2],
+                Color::random(),
+            );
+            continue;
+        }
+
+        let normal = (world_coords[2] - world_coords[0])
+            .cross(&(world_coords[1] - world_coords[0]))
+            .normalize();
+        let intensity = normal.dot(&light_dir);
+        // Back-face culling
+        if intensity > 0.0 {
+            let color = Color::rgb(
+                (intensity * 255.0) as u8,
+                (intensity * 255.0) as u8,
+                (intensity * 255.0) as u8,
+            );
+            renderer.draw_triangle(
+                &screen_coords[0],
+                &screen_coords[1],
+                &screen_coords[2],
+                color,
+            );
+        }
+    }
+}

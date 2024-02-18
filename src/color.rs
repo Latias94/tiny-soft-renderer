@@ -21,6 +21,13 @@ impl Color {
     pub const fn rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
         Color { r, g, b, a }
     }
+
+    pub fn random() -> Self {
+        let r = (rand::random::<f32>() * 255.0) as u8;
+        let g = (rand::random::<f32>() * 255.0) as u8;
+        let b = (rand::random::<f32>() * 255.0) as u8;
+        Color::rgb(r, g, b)
+    }
 }
 
 impl Default for Color {

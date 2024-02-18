@@ -1,5 +1,5 @@
 use crate::color::Color;
-use crate::math::{Vec2, Vec2u};
+use crate::math::{Vec2u, Vec3};
 
 pub struct Renderer {
     width: u32,
@@ -85,43 +85,87 @@ impl Renderer {
         }
     }
 
-    pub fn triangle(&mut self, t0: &Vec2u, t1: &Vec2u, t2: &Vec2u, color: Color) {
-        let mut t0: Vec2<f32> = (*t0).into();
-        let mut t1: Vec2<f32> = (*t1).into();
-        let mut t2: Vec2<f32> = (*t2).into();
-        if t0.y > t1.y {
-            std::mem::swap(&mut t0, &mut t1);
+    pub fn barycentric(t0: &Vec2u, t1: &Vec2u, t2: &Vec2u, p: &Vec2u) -> Vec3<f32> {
+        let u = Vec3 {
+            x: t2.x as f32 - t0.x as f32,
+            y: t1.x as f32 - t0.x as f32,
+            z: t0.x as f32 - p.x as f32,
         }
-        if t0.y > t2.y {
-            std::mem::swap(&mut t0, &mut t2);
-        }
-        if t1.y > t2.y {
-            std::mem::swap(&mut t1, &mut t2);
-        }
-        let total_height = t2.y - t0.y;
-        let t0y = t0.y as i32;
-        let t1y = t1.y as i32;
-        for i in 0..total_height as i32 {
-            let second_half = i > t1y - t0y || t1y == t0y;
-            let segment_height = if second_half {
-                t2.y - t1.y
-            } else {
-                t1.y - t0.y
+        .cross(&Vec3 {
+            x: t2.y as f32 - t0.y as f32,
+            y: t1.y as f32 - t0.y as f32,
+            z: t0.y as f32 - p.y as f32,
+        });
+
+        /* `pts` and `P` has integer value as coordinates
+        so `abs(u[2])` < 1 means `u[2]` is 0, that means
+        triangle is degenerate, in this case return something with negative coordinates */
+        if u.z.abs() < 1.0 {
+            return Vec3 {
+                x: -1.0,
+                y: 1.0,
+                z: 1.0,
             };
-            let alpha = i as f32 / total_height;
-            let beta = (i as f32 - if second_half { t1.y - t0.y } else { 0.0 }) / segment_height;
-            let mut a = t0 + (t2 - t0) * alpha;
-            let mut b = if second_half {
-                t1 + (t2 - t1) * beta
-            } else {
-                t0 + (t1 - t0) * beta
-            };
-            if a.x > b.x {
-                std::mem::swap(&mut a, &mut b);
-            }
-            for j in a.x as i32..=b.x as i32 {
-                self.draw_pixel(j as u32, (t0y + i) as u32, color);
+        }
+        Vec3 {
+            x: 1.0 - (u.x + u.y) / u.z,
+            y: u.y / u.z,
+            z: u.x / u.z,
+        }
+    }
+
+    pub fn draw_triangle(&mut self, t0: &Vec2u, t1: &Vec2u, t2: &Vec2u, color: Color) {
+        let mut bbox_min = Vec2u {
+            x: self.width - 1,
+            y: self.height - 1,
+        };
+        let mut bbox_max = Vec2u { x: 0, y: 0 };
+        let clamp = Vec2u {
+            x: self.width - 1,
+            y: self.height - 1,
+        };
+        let pts = [t0, t1, t2];
+        for pt in pts {
+            bbox_min.x = bbox_min.x.min(pt.x);
+            bbox_min.y = bbox_min.y.min(pt.y);
+            bbox_max.x = bbox_max.x.max(pt.x);
+            bbox_max.y = bbox_max.y.max(pt.y);
+        }
+        for x in bbox_min.x..=bbox_max.x {
+            for y in bbox_min.y..=bbox_max.y {
+                let bc_screen = Renderer::barycentric(t0, t1, t2, &Vec2u { x, y });
+                if bc_screen.x < 0.0 || bc_screen.y < 0.0 || bc_screen.z < 0.0 {
+                    continue;
+                }
+                let x = x.min(clamp.x);
+                let y = y.min(clamp.y);
+                self.draw_pixel(x, y, color);
             }
         }
+    }
+}
+
+#[allow(unused_imports)]
+mod tests {
+    use crate::math::Vec3;
+
+    #[test]
+    fn test_barycentric() {
+        use crate::math::Vec2u;
+        use crate::renderer::Renderer;
+        let t0 = Vec2u { x: 0, y: 0 };
+        let t1 = Vec2u { x: 50, y: 0 };
+        let t2 = Vec2u { x: 0, y: 50 };
+        let p = Vec2u { x: 10, y: 10 };
+
+        let barycentric_coords = Renderer::barycentric(&t0, &t1, &t2, &p);
+        assert_eq!(
+            barycentric_coords,
+            Vec3 {
+                x: 0.6,
+                y: 0.2,
+                z: 0.2,
+            }
+        );
     }
 }

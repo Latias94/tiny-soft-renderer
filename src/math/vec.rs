@@ -1,6 +1,10 @@
 use bytemuck::{Pod, Zeroable};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
+pub trait ToFloat32 {
+    fn to_f32(&self) -> f32;
+}
+
 pub trait Number:
     Clone
     + Copy
@@ -13,10 +17,22 @@ pub trait Number:
     + SubAssign
     + DivAssign
     + MulAssign
+    + ToFloat32
     + Zeroable
     + Pod
 {
 }
+
+macro_rules! impl_to_float32 {
+    ($($t:ty),+)=> {
+       $(impl ToFloat32 for $t {
+            fn to_f32(&self) -> f32 {
+                *self as f32
+            }
+        })*
+    };
+}
+impl_to_float32!(usize, f32, u32, i32);
 
 macro_rules! impl_number {
     ($($t:ty),+)=> {
@@ -24,7 +40,7 @@ macro_rules! impl_number {
     };
 }
 
-impl_number!(usize, f32, f64, u32, u64, u128, i32, i64, i128);
+impl_number!(usize, f32, u32, i32);
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Default, Zeroable)]
@@ -241,6 +257,47 @@ impl_vec_type_conversion!(Vec2, u32, f32, x, y);
 impl_vec_type_conversion!(Vec3, u32, f32, x, y, z);
 impl_vec_type_conversion!(Vec4, u32, f32, x, y, z, w);
 
+impl<T: Number> Vec3<T> {
+    pub fn cross(self, rhs: &Self) -> Self {
+        Vec3 {
+            x: self.y * rhs.z - self.z * rhs.y,
+            y: self.z * rhs.x - self.x * rhs.z,
+            z: self.x * rhs.y - self.y * rhs.x,
+        }
+    }
+}
+
+macro_rules! impl_vec_f32_func {
+    ($VecType:ident, $($field:ident),+) => {
+        impl<T: Number + ToFloat32> $VecType<T> {
+            pub fn sqrt(&self) -> f32 {
+                [$(
+                    self.$field.to_f32().powi(2),
+                )+]
+                .iter().sum::<f32>().sqrt()
+            }
+
+            pub fn normalize(&self) -> $VecType<f32> {
+                let length = self.sqrt();
+                $VecType {
+                    $($field: self.$field.to_f32() / length,)+
+                }
+            }
+
+            pub fn dot(&self, rhs: &$VecType<T>) -> f32 {
+                [$(
+                    self.$field.to_f32() * rhs.$field.to_f32(),
+                )+]
+                .iter().sum()
+            }
+        }
+    };
+}
+
+impl_vec_f32_func!(Vec2, x, y);
+impl_vec_f32_func!(Vec3, x, y, z);
+impl_vec_f32_func!(Vec4, x, y, z, w);
+
 #[cfg(test)]
 #[rustfmt::skip]
 mod tests {
@@ -312,5 +369,25 @@ mod tests {
         let vec = Vec2u { x: 1, y: 2 };
         let vec_f32: Vec2f = vec.into();
         assert_eq!(vec_f32, Vec2 { x: 1.0, y: 2.0 });
+    }
+
+    #[test]
+    fn test_vec_sqrt() {
+        let vec = Vec2 { x: 3, y: 4 };
+        assert_eq!(vec.sqrt(), 5.0);
+    }
+
+    #[test]
+    fn test_vec_normalize() {
+        let vec = Vec2 { x: 3, y: 4 };
+        let normalized = vec.normalize();
+        assert_eq!(normalized, Vec2 { x: 0.6, y: 0.8 });
+    }
+
+    #[test]
+    fn test_vec_dot() {
+        let vec1 = Vec2 { x: 1, y: 2 };
+        let vec2 = Vec2 { x: 3, y: 4 };
+        assert_eq!(vec1.dot(&vec2), 11.0);
     }
 }

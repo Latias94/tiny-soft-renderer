@@ -1,6 +1,6 @@
 use anyhow::Result;
 use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
+use sdl2::keyboard::{Keycode, Scancode};
 use sdl2::pixels::PixelFormatEnum;
 use sdl2::render::{Texture, WindowCanvas};
 use sdl2::Sdl;
@@ -62,5 +62,10 @@ impl WindowWrapper {
             }
         }
         false
+    }
+
+    pub fn is_key_pressed(&self, code: Scancode) -> bool {
+        let keyboard_state = sdl2::keyboard::KeyboardState::new(&self.event_pump);
+        keyboard_state.is_scancode_pressed(code)
     }
 }
