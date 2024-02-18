@@ -6,8 +6,14 @@ use tiny_soft_renderer::math::{Vec2u, Vec3f};
 use tiny_soft_renderer::renderer::Renderer;
 use tobj::Model;
 
+enum DrawMode {
+    Flat,
+    RandomColor,
+    Wireframe,
+}
+
 fn main() {
-    let title = "Playground, press space to change shading mode";
+    let title = "Playground, press A/D to change shading mode";
     let width = 800;
     let height = 800;
     let window_scale = 1;
@@ -22,14 +28,19 @@ fn main() {
         window_scale,
         &mut renderer,
         |renderer, window| {
-            let random_color = window.is_key_pressed(Scancode::Space);
-            draw(model, renderer, random_color);
+            let mut draw_mode = DrawMode::Flat;
+            if window.is_key_pressed(Scancode::A) {
+                draw_mode = DrawMode::RandomColor;
+            } else if window.is_key_pressed(Scancode::D) {
+                draw_mode = DrawMode::Wireframe;
+            }
+            draw(model, renderer, draw_mode);
         },
     )
     .unwrap();
 }
 
-fn draw(model: &Model, renderer: &mut Renderer, random_color: bool) {
+fn draw(model: &Model, renderer: &mut Renderer, draw_mode: DrawMode) {
     renderer.clear(Color::BLACK);
     let half_width = renderer.width() as f32 / 2.0;
     let half_height = renderer.height() as f32 / 2.0;
@@ -63,33 +74,40 @@ fn draw(model: &Model, renderer: &mut Renderer, random_color: bool) {
             y: ((v.y + 1.0) * half_height) as u32,
         });
 
-        if random_color {
-            renderer.draw_triangle(
-                &screen_coords[0],
-                &screen_coords[1],
-                &screen_coords[2],
-                Color::random(),
-            );
-            continue;
-        }
-
-        let normal = (world_coords[2] - world_coords[0])
-            .cross(&(world_coords[1] - world_coords[0]))
-            .normalize();
-        let intensity = normal.dot(&light_dir);
-        // Back-face culling
-        if intensity > 0.0 {
-            let color = Color::rgb(
-                (intensity * 255.0) as u8,
-                (intensity * 255.0) as u8,
-                (intensity * 255.0) as u8,
-            );
-            renderer.draw_triangle(
-                &screen_coords[0],
-                &screen_coords[1],
-                &screen_coords[2],
-                color,
-            );
+        match draw_mode {
+            DrawMode::Flat => {
+                let normal = (world_coords[2] - world_coords[0])
+                    .cross(&(world_coords[1] - world_coords[0]))
+                    .normalize();
+                let intensity = normal.dot(&light_dir);
+                // Back-face culling
+                if intensity > 0.0 {
+                    let color = Color::rgb(
+                        (intensity * 255.0) as u8,
+                        (intensity * 255.0) as u8,
+                        (intensity * 255.0) as u8,
+                    );
+                    renderer.draw_triangle(
+                        &screen_coords[0],
+                        &screen_coords[1],
+                        &screen_coords[2],
+                        color,
+                    );
+                }
+            }
+            DrawMode::RandomColor => {
+                renderer.draw_triangle(
+                    &screen_coords[0],
+                    &screen_coords[1],
+                    &screen_coords[2],
+                    Color::random(),
+                );
+            }
+            DrawMode::Wireframe => {
+                renderer.draw_line(&screen_coords[0], &screen_coords[1], Color::WHITE);
+                renderer.draw_line(&screen_coords[1], &screen_coords[2], Color::WHITE);
+                renderer.draw_line(&screen_coords[2], &screen_coords[0], Color::WHITE);
+            }
         }
     }
 }
