@@ -2,18 +2,21 @@ mod common;
 
 use sdl2::keyboard::Scancode;
 use tiny_soft_renderer::color::Color;
-use tiny_soft_renderer::math::{Vec2u, Vec3f, Vec3u};
+use tiny_soft_renderer::math::{Vec2f, Vec2u, Vec3f};
 use tiny_soft_renderer::renderer::Renderer;
+use tiny_soft_renderer::texture;
+use tiny_soft_renderer::texture::Texture;
 use tobj::Model;
 
 enum DrawMode {
+    Diffuse,
     Flat,
     RandomColor,
     Wireframe,
 }
 
 fn main() {
-    let title = "Playground, press A/D to change shading mode";
+    let title = "Playground, press A/S/D to change shading mode";
     let width = 800;
     let height = 800;
     let window_scale = 1;
@@ -21,6 +24,7 @@ fn main() {
     let obj_file = "assets/models/african_head.obj";
     let (models, _materials) = tobj::load_obj(obj_file, &tobj::LoadOptions::default()).unwrap();
     let model = &models[0];
+    let diffuse = texture::load_tga_texture("assets/textures/african_head_diffuse.tga").unwrap();
     common::run(
         title,
         width,
@@ -28,19 +32,21 @@ fn main() {
         window_scale,
         &mut renderer,
         |renderer, window| {
-            let mut draw_mode = DrawMode::Flat;
+            let mut draw_mode = DrawMode::Diffuse;
             if window.is_key_pressed(Scancode::A) {
+                draw_mode = DrawMode::Flat;
+            } else if window.is_key_pressed(Scancode::S) {
                 draw_mode = DrawMode::RandomColor;
             } else if window.is_key_pressed(Scancode::D) {
                 draw_mode = DrawMode::Wireframe;
             }
-            draw(model, renderer, draw_mode);
+            draw(model, renderer, &diffuse, draw_mode);
         },
     )
     .unwrap();
 }
 
-fn draw(model: &Model, renderer: &mut Renderer, draw_mode: DrawMode) {
+fn draw(model: &Model, renderer: &mut Renderer, diffuse: &Texture, draw_mode: DrawMode) {
     renderer.clear(Color::BLACK);
     let half_width = renderer.width() as f32 / 2.0;
     let half_height = renderer.height() as f32 / 2.0;
@@ -76,6 +82,38 @@ fn draw(model: &Model, renderer: &mut Renderer, draw_mode: DrawMode) {
         });
 
         match draw_mode {
+            DrawMode::Diffuse => {
+                let normal = (world_coords[2] - world_coords[0])
+                    .cross(&(world_coords[1] - world_coords[0]))
+                    .normalize();
+                let intensity = normal.dot(&light_dir);
+                if intensity > 0.0 {
+                    let uvs = [
+                        Vec2f {
+                            x: mesh.texcoords[2 * v0],
+                            y: mesh.texcoords[2 * v0 + 1],
+                        },
+                        Vec2f {
+                            x: mesh.texcoords[2 * v1],
+                            y: mesh.texcoords[2 * v1 + 1],
+                        },
+                        Vec2f {
+                            x: mesh.texcoords[2 * v2],
+                            y: mesh.texcoords[2 * v2 + 1],
+                        },
+                    ];
+
+                    renderer.draw_triangle_uv(
+                        &screen_coords[0],
+                        &screen_coords[1],
+                        &screen_coords[2],
+                        &uvs[0],
+                        &uvs[1],
+                        &uvs[2],
+                        diffuse,
+                    );
+                }
+            }
             DrawMode::Flat => {
                 let normal = (world_coords[2] - world_coords[0])
                     .cross(&(world_coords[1] - world_coords[0]))

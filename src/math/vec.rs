@@ -204,7 +204,7 @@ macro_rules! impl_vec_rhs_scalar_mul {
             $T: ScalarOps<$Rhs> + Number,
             $Rhs: Number,
         {
-            type Output = $VecType<<$T as ScalarOps<$Rhs>>::Output>;
+            type Output = $VecType<$Rhs>;
 
             fn mul(self, rhs: $Rhs) -> Self::Output {
                 $VecType {

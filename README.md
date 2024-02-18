@@ -13,7 +13,9 @@ crate stems from their requirement for the application to handle DPI scaling.
 
 ### Obj Model Flat Shading
 
-Press A to show random color, press D to show wireframe.
+Press A => flat shading
+Press S => random color
+press D => wireframe
 
 ```shell
 cargo r --example obj_flat_shading

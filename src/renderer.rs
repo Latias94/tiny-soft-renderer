@@ -1,5 +1,6 @@
 use crate::color::Color;
 use crate::math::{Vec2f, Vec2u, Vec3, Vec3f};
+use crate::texture::Texture;
 
 pub struct Renderer {
     width: u32,
@@ -88,7 +89,7 @@ impl Renderer {
         }
     }
 
-    pub fn barycentric(t0: &Vec3f, t1: &Vec3f, t2: &Vec3f, p: &Vec3f) -> Vec3<f32> {
+    pub fn barycentric(t0: &Vec3f, t1: &Vec3f, t2: &Vec3f, p: &Vec3f) -> Vec3f {
         let mut s = [Vec3f::default(); 2];
         for i in 0..2 {
             s[i].x = t2[i] - t0[i];
@@ -148,6 +149,61 @@ impl Renderer {
                 let index = (y * self.width + x) as usize;
                 if self.y_buffer[index] < p.z as i32 {
                     self.y_buffer[index] = p.z as i32;
+                    self.draw_pixel(x, y, color);
+                }
+            }
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn draw_triangle_uv(
+        &mut self,
+        t0: &Vec3f,
+        t1: &Vec3f,
+        t2: &Vec3f,
+        uv0: &Vec2f,
+        uv1: &Vec2f,
+        uv2: &Vec2f,
+        diffuse: &Texture,
+    ) {
+        let mut bbox_min = Vec2f {
+            x: f32::MAX,
+            y: f32::MAX,
+        };
+        let mut bbox_max = Vec2f {
+            x: -f32::MAX,
+            y: -f32::MAX,
+        };
+        let clamp = Vec2f {
+            x: self.width as f32 - 1.0,
+            y: self.height as f32 - 1.0,
+        };
+        let pts = [t0, t1, t2];
+        for pt in pts {
+            bbox_min.x = bbox_min.x.min(pt.x).max(0.0);
+            bbox_min.y = bbox_min.y.min(pt.y).max(0.0);
+            bbox_max.x = bbox_max.x.max(pt.x).min(clamp.x);
+            bbox_max.y = bbox_max.y.max(pt.y).min(clamp.y);
+        }
+
+        for x in bbox_min.x as u32..=bbox_max.x as u32 {
+            for y in bbox_min.y as u32..=bbox_max.y as u32 {
+                let p = Vec3f {
+                    x: x as f32,
+                    y: y as f32,
+                    z: 0.0,
+                };
+                let bc_screen = Renderer::barycentric(t0, t1, t2, &p);
+
+                if bc_screen.x < 0.0 || bc_screen.y < 0.0 || bc_screen.z < 0.0 {
+                    continue;
+                }
+                let index = (y * self.width + x) as usize;
+                if self.y_buffer[index] < p.z as i32 {
+                    self.y_buffer[index] = p.z as i32;
+                    //  interpolate uv coordinates using barycentric coordinates
+                    let uv = *uv0 * bc_screen.x + *uv1 * bc_screen.y + *uv2 * bc_screen.z;
+                    let color = diffuse.get_color(&uv);
                     self.draw_pixel(x, y, color);
                 }
             }
