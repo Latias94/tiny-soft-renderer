@@ -1,5 +1,5 @@
 use crate::color::Color;
-use crate::math::Vec2u;
+use crate::math::{Vec2, Vec2u};
 
 pub struct Renderer {
     width: u32,
@@ -39,7 +39,7 @@ impl Renderer {
         }
     }
 
-    pub fn set_pixel(&mut self, x: u32, y: u32, color: Color) {
+    pub fn draw_pixel(&mut self, x: u32, y: u32, color: Color) {
         if x >= self.width || y >= self.height {
             return;
         }
@@ -73,9 +73,9 @@ impl Renderer {
         let mut y = y0;
         for x in x0..=x1 {
             if steep {
-                self.set_pixel(y as u32, x as u32, color);
+                self.draw_pixel(y as u32, x as u32, color);
             } else {
-                self.set_pixel(x as u32, y as u32, color);
+                self.draw_pixel(x as u32, y as u32, color);
             }
             error2 += derror2;
             if error2 > dx {
@@ -86,9 +86,9 @@ impl Renderer {
     }
 
     pub fn triangle(&mut self, t0: &Vec2u, t1: &Vec2u, t2: &Vec2u, _color: Color) {
-        let mut t0 = *t0;
-        let mut t1 = *t1;
-        let mut t2 = *t2;
+        let mut t0: Vec2<f32> = (*t0).into();
+        let mut t1: Vec2<f32> = (*t1).into();
+        let mut t2: Vec2<f32> = (*t2).into();
         if t0.y > t1.y {
             std::mem::swap(&mut t0, &mut t1);
         }
@@ -98,8 +98,18 @@ impl Renderer {
         if t1.y > t2.y {
             std::mem::swap(&mut t1, &mut t2);
         }
-        self.draw_line(&t0, &t1, Color::GREEN);
-        self.draw_line(&t1, &t2, Color::GREEN);
-        self.draw_line(&t2, &t0, Color::RED);
+        let total_height = t2.y - t0.y;
+        let t0y = t0.y as i32;
+        let t1y = t1.y as i32;
+        for y in t0y..=t1y {
+            let y = y as f32;
+            let segment_height = t1.y - t0.y + 1.0;
+            let alpha = (y - t0.y) / total_height;
+            let beta = (y - t0.y) / segment_height;
+            let a = t0 + (t2 - t0) * alpha;
+            let b = t0 + (t1 - t0) * beta;
+            self.draw_pixel(a.x as u32, y as u32, Color::RED);
+            self.draw_pixel(b.x as u32, y as u32, Color::GREEN);
+        }
     }
 }

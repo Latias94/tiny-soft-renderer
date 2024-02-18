@@ -3,15 +3,13 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::PixelFormatEnum;
 use sdl2::render::{Texture, WindowCanvas};
-use sdl2::video::Window;
 use sdl2::Sdl;
 
 pub struct WindowWrapper {
-    sdl_context: Sdl,
+    _sdl_context: Sdl,
     canvas: WindowCanvas,
     event_pump: sdl2::EventPump,
     texture: Texture,
-    title: String,
 }
 
 impl WindowWrapper {
@@ -37,11 +35,10 @@ impl WindowWrapper {
             .unwrap();
 
         Self {
-            sdl_context,
+            _sdl_context: sdl_context,
             canvas,
             event_pump,
             texture,
-            title: title.to_string(),
         }
     }
 
