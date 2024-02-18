@@ -6,6 +6,7 @@ pub struct Renderer {
     height: u32,
     flip_y: bool,
     pixels: Vec<Color>,
+    y_buffer: Vec<i32>,
 }
 
 impl Renderer {
@@ -15,6 +16,7 @@ impl Renderer {
             height,
             flip_y,
             pixels: vec![Color::WHITE; (width * height) as usize],
+            y_buffer: vec![-i32::MAX; width as usize],
         }
     }
 
@@ -49,6 +51,7 @@ impl Renderer {
 
     pub fn clear(&mut self, color: Color) {
         self.pixels = vec![color; (self.width * self.height) as usize];
+        self.y_buffer = vec![-i32::MAX; self.width as usize];
     }
 
     pub fn draw_line(&mut self, v0: &Vec2u, v1: &Vec2u, color: Color) {
@@ -140,6 +143,26 @@ impl Renderer {
                 let x = x.min(clamp.x);
                 let y = y.min(clamp.y);
                 self.draw_pixel(x, y, color);
+            }
+        }
+    }
+
+    pub fn rasterize(&mut self, p0: &Vec2u, p1: &Vec2u, color: Color) {
+        let mut p0 = *p0;
+        let mut p1 = *p1;
+        if p0.x > p1.x {
+            std::mem::swap(&mut p0, &mut p1);
+        }
+        for x in p0.x..=p1.x {
+            let t = if p1.x == p0.x {
+                1.0
+            } else {
+                (x - p0.x) as f32 / (p1.x - p0.x) as f32
+            };
+            let y = p0.y as f32 * (1.0 - t) + p1.y as f32 * t;
+            if self.y_buffer[x as usize] < y as i32 {
+                self.y_buffer[x as usize] = y as i32;
+                self.draw_pixel(x, 0, color);
             }
         }
     }

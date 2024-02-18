@@ -64,6 +64,7 @@ impl WindowWrapper {
         false
     }
 
+    #[allow(dead_code)]
     pub fn is_key_pressed(&self, code: Scancode) -> bool {
         let keyboard_state = sdl2::keyboard::KeyboardState::new(&self.event_pump);
         keyboard_state.is_scancode_pressed(code)
