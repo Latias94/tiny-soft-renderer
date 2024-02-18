@@ -1,4 +1,5 @@
 use crate::color::Color;
+use crate::math::{Vec2i, Vec2u};
 
 pub struct Renderer {
     width: u32,
@@ -33,15 +34,6 @@ impl Renderer {
         unsafe {
             std::slice::from_raw_parts(
                 self.pixels.as_ptr() as *const u8,
-                self.pixels.len() * std::mem::size_of::<Color>(),
-            )
-        }
-    }
-
-    pub fn rgba_bytes_u32(&self) -> &[u32] {
-        unsafe {
-            std::slice::from_raw_parts(
-                self.pixels.as_ptr() as *const u32,
                 self.pixels.len() * std::mem::size_of::<Color>(),
             )
         }
@@ -91,5 +83,11 @@ impl Renderer {
                 error2 -= dx * 2;
             }
         }
+    }
+
+    pub fn triangle(&mut self, t0:Vec2u, t1:Vec2u, t2:Vec2u, color: Color) {
+        self.draw_line(t0.x, t0.y, t1.x, t1.y, color);
+        self.draw_line(t1.x, t1.y, t2.x, t2.y, color);
+        self.draw_line(t2.x, t2.y, t0.x, t0.y, color);
     }
 }
