@@ -50,9 +50,8 @@ fn draw(renderer: &mut Renderer) {
 
 fn redraw(texture: &mut sdl2::render::Texture, renderer: &Renderer) {
     let width = renderer.width() as usize;
-    // 3 = rgb, we use `PixelFormatEnum::RGB24` in `run()`
     texture
-        .update(None, renderer.rgb_pixels(), width * 3)
+        .update(None, renderer.rgba_bytes(), width * 4)
         .unwrap()
 }
 
@@ -79,7 +78,7 @@ fn run() {
         .unwrap();
     let creator = canvas.texture_creator();
     let mut texture = creator
-        .create_texture_target(PixelFormatEnum::RGB24, renderer_width, renderer_height)
+        .create_texture_target(PixelFormatEnum::RGBA32, renderer_width, renderer_height)
         .unwrap();
 
     let mut renderer = Renderer::new(renderer_width, renderer_height, true);

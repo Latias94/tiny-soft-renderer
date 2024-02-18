@@ -1,4 +1,5 @@
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[repr(C)]
+#[derive(Clone, Copy, Debug, PartialEq, bytemuck::Zeroable, bytemuck::Pod)]
 pub struct Color {
     pub r: u8,
     pub g: u8,

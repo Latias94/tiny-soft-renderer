@@ -5,7 +5,6 @@ pub struct Renderer {
     height: u32,
     flip_y: bool,
     pixels: Vec<Color>,
-    rgb_pixels: Vec<u8>,
 }
 
 impl Renderer {
@@ -15,7 +14,6 @@ impl Renderer {
             height,
             flip_y,
             pixels: vec![Color::WHITE; (width * height) as usize],
-            rgb_pixels: vec![255u8; (width * height * 3) as usize],
         }
     }
 
@@ -31,8 +29,13 @@ impl Renderer {
         &self.pixels
     }
 
-    pub fn rgb_pixels(&self) -> &[u8] {
-        &self.rgb_pixels
+    pub fn rgba_bytes(&self) -> &[u8] {
+        unsafe {
+            std::slice::from_raw_parts(
+                self.pixels.as_ptr() as *const u8,
+                self.pixels.len() * std::mem::size_of::<Color>(),
+            )
+        }
     }
 
     pub fn set_pixel(&mut self, x: u32, y: u32, color: Color) {
@@ -41,22 +44,10 @@ impl Renderer {
         }
         let y = if self.flip_y { self.height - y - 1 } else { y };
         self.pixels[(y * self.width + x) as usize] = color;
-        self.rgb_pixels[(y * self.width * 3 + x * 3) as usize] = color.r;
-        self.rgb_pixels[(y * self.width * 3 + x * 3 + 1) as usize] = color.g;
-        self.rgb_pixels[(y * self.width * 3 + x * 3 + 2) as usize] = color.b;
     }
 
     pub fn clear(&mut self, color: Color) {
         self.pixels = vec![color; (self.width * self.height) as usize];
-        let mut index = 0;
-        for _y in 0..self.height {
-            for _x in 0..self.width {
-                self.rgb_pixels[index] = color.r;
-                self.rgb_pixels[index + 1] = color.g;
-                self.rgb_pixels[index + 2] = color.b;
-                index += 3;
-            }
-        }
     }
 
     pub fn draw_line(&mut self, x0: u32, y0: u32, x1: u32, y1: u32, color: Color) {

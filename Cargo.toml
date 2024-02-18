@@ -4,13 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-sdl2 = { version = "0.36", features = ["bundled", "static-link"] }
 anyhow = "1"
+bytemuck = { version = "1", features = ["derive"] }
 
 [dev-dependencies]
-winit = {version = "0.29", features = ["rwh_05"]}
+winit = { version = "0.29", features = ["rwh_05"] }
 tobj = "4"
-
-[[example]]
-name = "playground"
-path = "examples/playground.rs"
+sdl2 = { version = "0.36", features = ["bundled", "static-link"] }
+pixels = "0.13"
+winit_input_helper = "0.15"
