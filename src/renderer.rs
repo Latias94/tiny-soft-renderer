@@ -38,6 +38,15 @@ impl Renderer {
         }
     }
 
+    pub fn rgba_bytes_u32(&self) -> &[u32] {
+        unsafe {
+            std::slice::from_raw_parts(
+                self.pixels.as_ptr() as *const u32,
+                self.pixels.len() * std::mem::size_of::<Color>(),
+            )
+        }
+    }
+
     pub fn set_pixel(&mut self, x: u32, y: u32, color: Color) {
         if x >= self.width || y >= self.height {
             return;
