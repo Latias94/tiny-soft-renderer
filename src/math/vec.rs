@@ -339,11 +339,49 @@ impl_index_and_get_for_vec!(Vec2, T, 0 => x, 1 => y);
 impl_index_and_get_for_vec!(Vec3, T, 0 => x, 1 => y, 2 => z);
 impl_index_and_get_for_vec!(Vec4, T, 0 => x, 1 => y, 2 => z, 3 => w);
 
+// macros to create VecType: vec2, vec3, vec4 and T: usize, f32, u32, i32
+macro_rules! impl_vec_new {
+    ($VecType:ident, $T:ty, $($field:ident),+) => {
+        impl $VecType<$T> {
+            pub const fn new($($field: $T),+) -> Self {
+                $VecType {
+                    $($field,)+
+                }
+            }
+        }
+    };
+}
+
+impl_vec_new!(Vec2, f32, x, y);
+impl_vec_new!(Vec2, u32, x, y);
+impl_vec_new!(Vec2, usize, x, y);
+impl_vec_new!(Vec2, i32, x, y);
+impl_vec_new!(Vec3, f32, x, y, z);
+impl_vec_new!(Vec3, u32, x, y, z);
+impl_vec_new!(Vec3, usize, x, y, z);
+impl_vec_new!(Vec3, i32, x, y, z);
+impl_vec_new!(Vec4, f32, x, y, z, w);
+impl_vec_new!(Vec4, u32, x, y, z, w);
+impl_vec_new!(Vec4, usize, x, y, z, w);
+impl_vec_new!(Vec4, i32, x, y, z, w);
+
+pub fn vec2<T: Number>(x: T, y: T) -> Vec2<T> {
+    Vec2 { x, y }
+}
+
+pub fn vec3<T: Number>(x: T, y: T, z: T) -> Vec3<T> {
+    Vec3 { x, y, z }
+}
+
+pub fn vec4<T: Number>(x: T, y: T, z: T, w: T) -> Vec4<T> {
+    Vec4 { x, y, z, w }
+}
+
 #[cfg(test)]
 #[rustfmt::skip]
 mod tests {
     use crate::math::vec::{Vec2, Vec3, Vec4};
-    use crate::math::{Vec2f, Vec2u};
+    use crate::math::{Vec2f, Vec2u, vec3, Vec3i};
 
     #[test]
     fn test_vec2_operations() {
@@ -449,5 +487,14 @@ mod tests {
 
         assert_eq!(vec.get(0), &3);
         assert_eq!(vec.get(1), &4);
+    }
+
+    #[test]
+    fn test_vec_new() {
+        let vec = Vec2u::new(1, 2);
+        assert_eq!(vec, Vec2u { x: 1, y: 2 });
+
+        let vec = vec3(1, 2, 3);
+        assert_eq!(vec, Vec3i { x: 1, y: 2, z: 3 });
     }
 }

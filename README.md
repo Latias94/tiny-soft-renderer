@@ -13,9 +13,17 @@ crate stems from their requirement for the application to handle DPI scaling.
 
 ### Obj Model Flat Shading
 
-Press A => flat shading
-Press S => random color
-press D => wireframe
+<p align="left">
+  <img src="screenshots/obj_model_wireframe.png" width="49%" alt="wireframe" />
+  <img src="screenshots/obj_model_flag_shading_0.png" width="49%"  alt="random color"/>
+  <img src="screenshots/obj_model_flag_shading_z_buffer.png" width="49%" alt="z-buffer"/>
+  <img src="screenshots/obj_model_diffuse.png" width="49%" alt="diffuse"/>
+</p>
+
+Press A => flat shading  
+Press S => random color  
+press D => wireframe  
+no input => diffuse
 
 ```shell
 cargo r --example obj_flat_shading

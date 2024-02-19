@@ -2,11 +2,10 @@ mod common;
 
 use sdl2::keyboard::Scancode;
 use tiny_soft_renderer::color::Color;
-use tiny_soft_renderer::math::{Vec2f, Vec2u, Vec3f};
+use tiny_soft_renderer::math::{Vec2u, Vec3f};
+use tiny_soft_renderer::model::Model;
 use tiny_soft_renderer::renderer::Renderer;
 use tiny_soft_renderer::texture;
-use tiny_soft_renderer::texture::Texture;
-use tobj::Model;
 
 enum DrawMode {
     Diffuse,
@@ -21,10 +20,9 @@ fn main() {
     let height = 800;
     let window_scale = 1;
     let mut renderer = Renderer::new(width, height, true);
-    let obj_file = "assets/models/african_head.obj";
-    let (models, _materials) = tobj::load_obj(obj_file, &tobj::LoadOptions::default()).unwrap();
-    let model = &models[0];
     let diffuse = texture::load_tga_texture("assets/textures/african_head_diffuse.tga").unwrap();
+    let model = Model::load_obj_model("assets/models/african_head.obj", diffuse).unwrap();
+
     common::run(
         title,
         width,
@@ -40,20 +38,16 @@ fn main() {
             } else if window.is_key_pressed(Scancode::D) {
                 draw_mode = DrawMode::Wireframe;
             }
-            draw(model, renderer, &diffuse, draw_mode);
+            draw(&model, renderer, draw_mode);
         },
     )
     .unwrap();
 }
 
-fn draw(model: &Model, renderer: &mut Renderer, diffuse: &Texture, draw_mode: DrawMode) {
+fn draw(model: &Model, renderer: &mut Renderer, draw_mode: DrawMode) {
     renderer.clear(Color::BLACK);
     let half_width = renderer.width() as f32 / 2.0;
     let half_height = renderer.height() as f32 / 2.0;
-
-    let mesh = &model.mesh;
-    let indices = &mesh.indices;
-    let positions = &mesh.positions;
 
     let light_dir = Vec3f {
         x: 0.0,
@@ -61,19 +55,15 @@ fn draw(model: &Model, renderer: &mut Renderer, diffuse: &Texture, draw_mode: Dr
         z: -1.0,
     };
 
-    for f in (0..indices.len()).step_by(3) {
+    for index in model.indices.chunks(3) {
         let [v0, v1, v2] = [
-            indices[f] as usize,
-            indices[f + 1] as usize,
-            indices[f + 2] as usize,
+            model.vertices[index[0] as usize].position,
+            model.vertices[index[1] as usize].position,
+            model.vertices[index[2] as usize].position,
         ];
 
         // points of the triangle
-        let world_coords = [v0, v1, v2].map(|v| Vec3f {
-            x: positions[3 * v],
-            y: positions[3 * v + 1],
-            z: positions[3 * v + 2],
-        });
+        let world_coords = [v0, v1, v2];
 
         let screen_coords = world_coords.map(|v| Vec3f {
             x: (v.x + 1.0) * half_width,
@@ -89,18 +79,9 @@ fn draw(model: &Model, renderer: &mut Renderer, diffuse: &Texture, draw_mode: Dr
                 let intensity = normal.dot(&light_dir);
                 if intensity > 0.0 {
                     let uvs = [
-                        Vec2f {
-                            x: mesh.texcoords[2 * v0],
-                            y: mesh.texcoords[2 * v0 + 1],
-                        },
-                        Vec2f {
-                            x: mesh.texcoords[2 * v1],
-                            y: mesh.texcoords[2 * v1 + 1],
-                        },
-                        Vec2f {
-                            x: mesh.texcoords[2 * v2],
-                            y: mesh.texcoords[2 * v2 + 1],
-                        },
+                        model.vertices[index[0] as usize].uv,
+                        model.vertices[index[1] as usize].uv,
+                        model.vertices[index[2] as usize].uv,
                     ];
 
                     renderer.draw_triangle_uv(
@@ -110,7 +91,7 @@ fn draw(model: &Model, renderer: &mut Renderer, diffuse: &Texture, draw_mode: Dr
                         &uvs[0],
                         &uvs[1],
                         &uvs[2],
-                        diffuse,
+                        &model.diffuse,
                     );
                 }
             }
