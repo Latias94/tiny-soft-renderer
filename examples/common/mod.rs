@@ -1,5 +1,4 @@
 use crate::common::window_wrapper::WindowWrapper;
-use std::time::Duration;
 use tiny_soft_renderer::renderer::Renderer;
 
 pub mod window_wrapper;
@@ -24,7 +23,7 @@ where
         draw(renderer, &window_wrapper);
         let pixel_row_width = renderer.width() as usize;
         window_wrapper.update(pixel_row_width, renderer.rgba_bytes())?;
-        std::thread::sleep(Duration::new(0, 70_000));
+        // std::thread::sleep(Duration::new(0, 70_000));
     }
     Ok(())
 }

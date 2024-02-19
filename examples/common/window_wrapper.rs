@@ -4,12 +4,17 @@ use sdl2::keyboard::{Keycode, Scancode};
 use sdl2::pixels::PixelFormatEnum;
 use sdl2::render::{Texture, WindowCanvas};
 use sdl2::Sdl;
+use std::time::{Duration, Instant};
 
 pub struct WindowWrapper {
     _sdl_context: Sdl,
     canvas: WindowCanvas,
     event_pump: sdl2::EventPump,
     texture: Texture,
+    title: String,
+    last_frame: Instant,
+    frame_count: u32,
+    fps: u32,
 }
 
 impl WindowWrapper {
@@ -21,8 +26,11 @@ impl WindowWrapper {
             .position_centered()
             .build()
             .unwrap();
-
-        let mut canvas = window.into_canvas().present_vsync().build().unwrap();
+        let mut canvas = window
+            .into_canvas()
+            // .present_vsync()
+            .build()
+            .unwrap();
         canvas
             .set_scale(window_scale as f32, window_scale as f32)
             .unwrap();
@@ -39,10 +47,26 @@ impl WindowWrapper {
             canvas,
             event_pump,
             texture,
+            title: title.to_string(),
+            last_frame: Instant::now(),
+            frame_count: 0,
+            fps: 0,
         }
     }
 
     pub fn update(&mut self, pixel_row_width: usize, pixels: &[u8]) -> Result<()> {
+        let now = Instant::now();
+        let delta = now.duration_since(self.last_frame);
+
+        self.frame_count += 1;
+        if delta > Duration::from_secs(1) {
+            self.fps = self.frame_count;
+            self.frame_count = 0;
+            self.last_frame = now;
+            let window = self.canvas.window_mut();
+            window.set_title(&format!("{} |FPS: {}", self.title, self.fps))?;
+        }
+
         self.texture.update(None, pixels, pixel_row_width * 4)?;
         self.canvas.clear();
         self.canvas.copy(&self.texture, None, None).unwrap();
