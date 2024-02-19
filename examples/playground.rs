@@ -16,17 +16,17 @@ fn main() {
 
 fn draw(renderer: &mut Renderer, _window: &WindowWrapper) {
     renderer.clear(Color::BLACK);
-    renderer.rasterize(
+    renderer.draw_line(
         &Vec2u { x: 20, y: 34 },
         &Vec2u { x: 744, y: 400 },
         Color::RED,
     );
-    renderer.rasterize(
+    renderer.draw_line(
         &Vec2u { x: 120, y: 434 },
         &Vec2u { x: 444, y: 400 },
         Color::GREEN,
     );
-    renderer.rasterize(
+    renderer.draw_line(
         &Vec2u { x: 330, y: 463 },
         &Vec2u { x: 594, y: 200 },
         Color::BLUE,
