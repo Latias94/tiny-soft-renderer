@@ -17,6 +17,7 @@ pub struct WindowWrapper {
     fps: u32,
 }
 
+#[profiling::all_functions]
 impl WindowWrapper {
     pub fn new(title: &str, width: u32, height: u32, window_scale: u32) -> Self {
         let sdl_context = sdl2::init().unwrap();
@@ -55,6 +56,7 @@ impl WindowWrapper {
     }
 
     pub fn update(&mut self, pixel_row_width: usize, pixels: &[u8]) -> Result<()> {
+        profiling::finish_frame!();
         let now = Instant::now();
         let delta = now.duration_since(self.last_frame);
 
@@ -64,7 +66,7 @@ impl WindowWrapper {
             self.frame_count = 0;
             self.last_frame = now;
             let window = self.canvas.window_mut();
-            window.set_title(&format!("{} |FPS: {}", self.title, self.fps))?;
+            window.set_title(&format!("{} | FPS: {}", self.title, self.fps))?;
         }
 
         self.texture.update(None, pixels, pixel_row_width * 4)?;

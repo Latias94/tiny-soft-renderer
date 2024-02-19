@@ -5,7 +5,7 @@ use tiny_soft_renderer::color::Color;
 use tiny_soft_renderer::math::{Vec2u, Vec3f};
 use tiny_soft_renderer::model::Model;
 use tiny_soft_renderer::renderer::Renderer;
-use tiny_soft_renderer::texture;
+use tiny_soft_renderer::texture::Texture;
 
 enum DrawMode {
     Diffuse,
@@ -20,7 +20,7 @@ fn main() {
     let height = 800;
     let window_scale = 1;
     let mut renderer = Renderer::new(width, height, true);
-    let diffuse = texture::load_tga_texture("assets/textures/african_head_diffuse.tga").unwrap();
+    let diffuse = Texture::load_tga_texture("assets/textures/african_head_diffuse.tga").unwrap();
     let model = Model::load_obj_model("assets/models/african_head.obj", diffuse).unwrap();
 
     common::run(

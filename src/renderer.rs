@@ -114,6 +114,7 @@ impl Renderer {
         }
     }
 
+    #[profiling::function]
     pub fn draw_triangle(&mut self, t0: &Vec3f, t1: &Vec3f, t2: &Vec3f, color: Color) {
         let mut bbox_min = Vec2f {
             x: f32::MAX,
@@ -156,6 +157,7 @@ impl Renderer {
     }
 
     #[allow(clippy::too_many_arguments)]
+    #[profiling::function]
     pub fn draw_triangle_uv(
         &mut self,
         t0: &Vec3f,

@@ -17,26 +17,27 @@ impl Texture {
         let index = (y * self.width + x) as usize;
         self.pixels[index]
     }
-}
 
-pub fn load_tga_texture<P: AsRef<Path>>(path: P) -> Result<Texture> {
-    let path = path.as_ref();
-    let img = ImageReader::open(path)?.decode()?;
-    let img = img.into_rgba8();
-    let width = img.width();
-    let height = img.height();
-    let pixels = img
-        .pixels()
-        .map(|p| Color {
-            r: p[0],
-            g: p[1],
-            b: p[2],
-            a: p[3],
+    #[profiling::function]
+    pub fn load_tga_texture<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let path = path.as_ref();
+        let img = ImageReader::open(path)?.decode()?;
+        let img = img.into_rgba8();
+        let width = img.width();
+        let height = img.height();
+        let pixels = img
+            .pixels()
+            .map(|p| Color {
+                r: p[0],
+                g: p[1],
+                b: p[2],
+                a: p[3],
+            })
+            .collect();
+        Ok(Texture {
+            pixels,
+            width,
+            height,
         })
-        .collect();
-    Ok(Texture {
-        pixels,
-        width,
-        height,
-    })
+    }
 }

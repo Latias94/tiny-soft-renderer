@@ -39,6 +39,7 @@ pub struct Model {
 }
 
 impl Model {
+    #[profiling::function]
     pub fn load_obj_model<P: AsRef<Path> + fmt::Debug>(
         model_path: P,
         diffuse: Texture,
