@@ -1,5 +1,7 @@
 use bytemuck::{Pod, Zeroable};
-use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Sub, SubAssign};
+use std::ops::{
+    Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
+};
 
 pub trait ToFloat32 {
     fn to_f32(&self) -> f32;
@@ -271,7 +273,7 @@ impl<T: Number> Vec3<T> {
     }
 }
 
-macro_rules! impl_vec_f32_func {
+macro_rules! impl_vec_to_f32_methods {
     ($VecType:ident, $($field:ident),+) => {
         impl<T: Number + ToFloat32> $VecType<T> {
             pub fn sqrt(&self) -> f32 {
@@ -287,20 +289,13 @@ macro_rules! impl_vec_f32_func {
                     $($field: self.$field.to_f32() / length,)+
                 }
             }
-
-            pub fn dot(&self, rhs: &$VecType<T>) -> f32 {
-                [$(
-                    self.$field.to_f32() * rhs.$field.to_f32(),
-                )+]
-                .iter().sum()
-            }
         }
     };
 }
 
-impl_vec_f32_func!(Vec2, x, y);
-impl_vec_f32_func!(Vec3, x, y, z);
-impl_vec_f32_func!(Vec4, x, y, z, w);
+impl_vec_to_f32_methods!(Vec2, x, y);
+impl_vec_to_f32_methods!(Vec3, x, y, z);
+impl_vec_to_f32_methods!(Vec4, x, y, z, w);
 
 macro_rules! impl_index_and_get_for_vec {
     ($VecType:ident, $T:ty, $($index:expr => $field:ident),+) => {
@@ -340,7 +335,7 @@ impl_index_and_get_for_vec!(Vec3, T, 0 => x, 1 => y, 2 => z);
 impl_index_and_get_for_vec!(Vec4, T, 0 => x, 1 => y, 2 => z, 3 => w);
 
 // macros to create VecType: vec2, vec3, vec4 and T: usize, f32, u32, i32
-macro_rules! impl_vec_new {
+macro_rules! impl_vec_common_methods {
     ($VecType:ident, $T:ty, $($field:ident),+) => {
         impl $VecType<$T> {
             pub const fn new($($field: $T),+) -> Self {
@@ -348,22 +343,78 @@ macro_rules! impl_vec_new {
                     $($field,)+
                 }
             }
+
+            pub const fn splat(value: $T) -> Self {
+                $VecType {
+                    $($field: value,)+
+                }
+            }
+
+            pub const ZERO: Self = $VecType {
+                $($field: 0 as $T,)+
+            };
+
+            pub const ONE: Self = $VecType {
+                $($field: 1 as $T,)+
+            };
+
+            $(pub const fn $field(&self) -> $T {
+                self.$field
+            })+
         }
     };
 }
 
-impl_vec_new!(Vec2, f32, x, y);
-impl_vec_new!(Vec2, u32, x, y);
-impl_vec_new!(Vec2, usize, x, y);
-impl_vec_new!(Vec2, i32, x, y);
-impl_vec_new!(Vec3, f32, x, y, z);
-impl_vec_new!(Vec3, u32, x, y, z);
-impl_vec_new!(Vec3, usize, x, y, z);
-impl_vec_new!(Vec3, i32, x, y, z);
-impl_vec_new!(Vec4, f32, x, y, z, w);
-impl_vec_new!(Vec4, u32, x, y, z, w);
-impl_vec_new!(Vec4, usize, x, y, z, w);
-impl_vec_new!(Vec4, i32, x, y, z, w);
+impl_vec_common_methods!(Vec2, f32, x, y);
+impl_vec_common_methods!(Vec2, u32, x, y);
+impl_vec_common_methods!(Vec2, usize, x, y);
+impl_vec_common_methods!(Vec2, i32, x, y);
+impl_vec_common_methods!(Vec3, f32, x, y, z);
+impl_vec_common_methods!(Vec3, u32, x, y, z);
+impl_vec_common_methods!(Vec3, usize, x, y, z);
+impl_vec_common_methods!(Vec3, i32, x, y, z);
+impl_vec_common_methods!(Vec4, f32, x, y, z, w);
+impl_vec_common_methods!(Vec4, u32, x, y, z, w);
+impl_vec_common_methods!(Vec4, usize, x, y, z, w);
+impl_vec_common_methods!(Vec4, i32, x, y, z, w);
+
+macro_rules! impl_vec_common_methods_for_not_f32 {
+    ($VecType:ident, $T:ty, $($field:ident),+) => {
+        impl $VecType<$T> {
+            pub fn dot(&self, rhs: &$VecType<$T>) -> $T {
+                let mut result = 0 as $T;
+                $(result += self.$field * rhs.$field;)+
+                result
+            }
+        }
+    };
+}
+
+impl_vec_common_methods_for_not_f32!(Vec2, u32, x, y);
+impl_vec_common_methods_for_not_f32!(Vec2, usize, x, y);
+impl_vec_common_methods_for_not_f32!(Vec2, i32, x, y);
+impl_vec_common_methods_for_not_f32!(Vec3, u32, x, y, z);
+impl_vec_common_methods_for_not_f32!(Vec3, usize, x, y, z);
+impl_vec_common_methods_for_not_f32!(Vec3, i32, x, y, z);
+impl_vec_common_methods_for_not_f32!(Vec4, u32, x, y, z, w);
+impl_vec_common_methods_for_not_f32!(Vec4, usize, x, y, z, w);
+impl_vec_common_methods_for_not_f32!(Vec4, i32, x, y, z, w);
+
+macro_rules! impl_vec_common_methods_for_f32 {
+    ($VecType:ident, $($field:ident),+) => {
+        impl $VecType<f32> {
+            pub fn dot(&self, rhs: &$VecType<f32>) -> f32 {
+                let mut result = 0 as f32;
+                $(result += self.$field * rhs.$field;)+
+                result
+            }
+        }
+    };
+}
+
+impl_vec_common_methods_for_f32!(Vec2, x, y);
+impl_vec_common_methods_for_f32!(Vec3, x, y, z);
+impl_vec_common_methods_for_f32!(Vec4, x, y, z, w);
 
 pub fn vec2<T: Number>(x: T, y: T) -> Vec2<T> {
     Vec2 { x, y }
@@ -377,11 +428,50 @@ pub fn vec4<T: Number>(x: T, y: T, z: T, w: T) -> Vec4<T> {
     Vec4 { x, y, z, w }
 }
 
+macro_rules! impl_vec_from_array {
+    ($VecType:ident, $T:ty, $elemCount:expr, $func:ident, $($field:expr),+) => {
+        impl From<[$T; $elemCount]> for $VecType<$T> {
+            fn from(v: [$T; $elemCount]) -> Self {
+                $func($(v[$field],)+)
+            }
+        }
+    };
+}
+impl_vec_from_array!(Vec2, f32, 2, vec2, 0, 1);
+impl_vec_from_array!(Vec2, u32, 2, vec2, 0, 1);
+impl_vec_from_array!(Vec2, usize, 2, vec2, 0, 1);
+impl_vec_from_array!(Vec2, i32, 2, vec2, 0, 1);
+impl_vec_from_array!(Vec3, f32, 3, vec3, 0, 1, 2);
+impl_vec_from_array!(Vec3, u32, 3, vec3, 0, 1, 2);
+impl_vec_from_array!(Vec3, usize, 3, vec3, 0, 1, 2);
+impl_vec_from_array!(Vec3, i32, 3, vec3, 0, 1, 2);
+impl_vec_from_array!(Vec4, f32, 4, vec4, 0, 1, 2, 3);
+impl_vec_from_array!(Vec4, u32, 4, vec4, 0, 1, 2, 3);
+impl_vec_from_array!(Vec4, usize, 4, vec4, 0, 1, 2, 3);
+impl_vec_from_array!(Vec4, i32, 4, vec4, 0, 1, 2, 3);
+
+macro_rules! impl_vec_neg_ops {
+    ($VecType:ident, $($field:ident),+) => {
+        impl<T: Number + Neg<Output = T>> Neg for $VecType<T> {
+            type Output = Self;
+
+            fn neg(self) -> Self::Output {
+                $VecType {
+                    $( $field: -self.$field, )+
+                }
+            }
+        }
+    };
+}
+impl_vec_neg_ops!(Vec2, x, y);
+impl_vec_neg_ops!(Vec3, x, y, z);
+impl_vec_neg_ops!(Vec4, x, y, z, w);
+
 #[cfg(test)]
 #[rustfmt::skip]
 mod tests {
     use crate::math::vec::{Vec2, Vec3, Vec4};
-    use crate::math::{Vec2f, Vec2u, vec3, Vec3i};
+    use crate::math::{Vec2f, Vec2u, vec3, Vec3i, Vec4u};
 
     #[test]
     fn test_vec2_operations() {
@@ -468,13 +558,6 @@ mod tests {
     }
 
     #[test]
-    fn test_vec_dot() {
-        let vec1 = Vec2 { x: 1, y: 2 };
-        let vec2 = Vec2 { x: 3, y: 4 };
-        assert_eq!(vec1.dot(&vec2), 11.0);
-    }
-
-    #[test]
     fn test_vec_index_and_get() {
         let vec = Vec2 { x: 1, y: 2 };
         assert_eq!(vec[0], 1);
@@ -490,11 +573,54 @@ mod tests {
     }
 
     #[test]
-    fn test_vec_new() {
+    fn test_vec_common_methods() {
         let vec = Vec2u::new(1, 2);
         assert_eq!(vec, Vec2u { x: 1, y: 2 });
 
         let vec = vec3(1, 2, 3);
         assert_eq!(vec, Vec3i { x: 1, y: 2, z: 3 });
+
+        let vec = Vec4u::splat(1);
+        assert_eq!(vec, Vec4u { x: 1, y: 1, z: 1, w: 1 });
+
+        let vec1 = Vec4u::new(1, 2, 3, 4);
+        let vec2 = Vec4u::new(5, 6, 7, 8);
+        assert_eq!(vec1.dot(&vec2), 70);
+
+        let vec1 = Vec2f { x: 1.0, y: 2.0 };
+        let vec2 = Vec2f { x: 3.0, y: 4.0 };
+        assert_eq!(vec1.dot(&vec2), 11.0);
+
+        assert_eq!(Vec2f::ZERO, Vec2f { x: 0.0, y: 0.0 });
+        assert_eq!(Vec2f::ONE, Vec2f { x: 1.0, y: 1.0 });
+
+        assert_eq!(Vec2f::ZERO.x(), 0.0);
+        assert_eq!(Vec2f::ONE.y(), 1.0);
+        assert_eq!(Vec3i::ZERO.z(), 0);
+        assert_eq!(Vec4u::ONE.w(), 1);
+    }
+
+    #[test]
+    fn test_vec_from_array() {
+        let vec = Vec2::from([1, 2]);
+        assert_eq!(vec, Vec2 { x: 1, y: 2 });
+
+        let vec = Vec3::from([1, 2, 3]);
+        assert_eq!(vec, Vec3 { x: 1, y: 2, z: 3 });
+
+        let vec = Vec4::from([1, 2, 3, 4]);
+        assert_eq!(vec, Vec4 { x: 1, y: 2, z: 3, w: 4 });
+    }
+
+    #[test]
+    fn test_vec_neg() {
+        let vec = Vec2 { x: 1, y: 2 };
+        assert_eq!(-vec, Vec2 { x: -1, y: -2 });
+
+        let vec = Vec3 { x: 1, y: 2, z: 3 };
+        assert_eq!(-vec, Vec3 { x: -1, y: -2, z: -3 });
+
+        let vec = Vec4 { x: 1, y: 2, z: 3, w: 4 };
+        assert_eq!(-vec, Vec4 { x: -1, y: -2, z: -3, w: -4 });
     }
 }
