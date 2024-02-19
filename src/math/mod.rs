@@ -1,5 +1,7 @@
+pub mod mat;
 pub mod vec;
 
+pub use mat::*;
 pub use vec::*;
 
 pub type Vec2u = Vec2<u32>;
