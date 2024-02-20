@@ -19,4 +19,6 @@ pub type Vec4i = TVec4<i32>;
 pub type Vec4f = TVec4<f32>;
 pub type Vec4 = Vec4f;
 
-pub type Mat4 = Mat4f;
+pub type Mat4 = Mat4x4;
+pub type Mat44 = Mat4x4;
+pub type Mat41 = Mat4x1;
