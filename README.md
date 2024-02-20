@@ -26,7 +26,7 @@ cargo r --example obj_flat_shading -r --features=profile-with-tracy
   <img src="screenshots/obj_model_wireframe.png" width="49%" alt="wireframe" />
   <img src="screenshots/obj_model_flag_shading_0.png" width="49%"  alt="random color"/>
   <img src="screenshots/obj_model_flag_shading_z_buffer.png" width="49%" alt="z-buffer"/>
-  <img src="screenshots/obj_model_diffuse.png" width="49%" alt="diffuse"/>
+  <img src="screenshots/obj_model_diffuse_light.png" width="49%" alt="diffuse"/>
 </p>
 
 Press A => flat shading  

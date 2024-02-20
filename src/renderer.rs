@@ -167,6 +167,7 @@ impl Renderer {
         uv1: &Vec2,
         uv2: &Vec2,
         diffuse: &Texture,
+        intensity: f32,
     ) {
         let mut bbox_min = Vec2 {
             x: f32::MAX,
@@ -205,7 +206,8 @@ impl Renderer {
                     self.y_buffer[index] = p.z as i32;
                     //  interpolate uv coordinates using barycentric coordinates
                     let uv = *uv0 * bc_screen.x + *uv1 * bc_screen.y + *uv2 * bc_screen.z;
-                    let color = diffuse.get_color(&uv);
+                    let mut color = diffuse.get_color(&uv);
+                    color *= intensity;
                     self.draw_pixel(x, y, color);
                 }
             }

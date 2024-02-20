@@ -1,3 +1,5 @@
+use std::ops::{Mul, MulAssign};
+
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq, bytemuck::Zeroable, bytemuck::Pod)]
 pub struct Color {
@@ -33,5 +35,24 @@ impl Color {
 impl Default for Color {
     fn default() -> Self {
         Self::WHITE
+    }
+}
+
+impl Mul<f32> for Color {
+    type Output = Self;
+
+    fn mul(self, rhs: f32) -> Self::Output {
+        Color::rgba(
+            (self.r as f32 * rhs) as u8,
+            (self.g as f32 * rhs) as u8,
+            (self.b as f32 * rhs) as u8,
+            self.a,
+        )
+    }
+}
+
+impl MulAssign<f32> for Color {
+    fn mul_assign(&mut self, rhs: f32) {
+        *self = *self * rhs;
     }
 }

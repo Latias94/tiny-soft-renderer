@@ -88,7 +88,7 @@ impl Mat4f {
     }
 
     pub fn to_array(&self) -> [f32; 16] {
-        self.m.clone()
+        self.m
     }
 
     pub fn as_slice(&self) -> &[f32; 16] {

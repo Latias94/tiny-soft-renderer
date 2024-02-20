@@ -2,7 +2,7 @@ mod common;
 
 use sdl2::keyboard::Scancode;
 use tiny_soft_renderer::color::Color;
-use tiny_soft_renderer::math::{Vec2u, Vec3};
+use tiny_soft_renderer::math::{Vec2u, Vec3, vec3};
 use tiny_soft_renderer::model::Model;
 use tiny_soft_renderer::renderer::Renderer;
 use tiny_soft_renderer::texture::Texture;
@@ -48,12 +48,7 @@ fn draw(model: &Model, renderer: &mut Renderer, draw_mode: DrawMode) {
     renderer.clear(Color::BLACK);
     let half_width = renderer.width() as f32 / 2.0;
     let half_height = renderer.height() as f32 / 2.0;
-
-    let light_dir = Vec3 {
-        x: 0.0,
-        y: 0.0,
-        z: -1.0,
-    };
+    let light_dir = vec3(0.0, 0.0, -1.0);
 
     for index in model.indices.chunks(3) {
         let [v0, v1, v2] = [
@@ -92,6 +87,7 @@ fn draw(model: &Model, renderer: &mut Renderer, draw_mode: DrawMode) {
                         &uvs[1],
                         &uvs[2],
                         &model.diffuse,
+                        intensity,
                     );
                 }
             }
