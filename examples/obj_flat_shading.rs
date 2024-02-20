@@ -2,7 +2,7 @@ mod common;
 
 use sdl2::keyboard::Scancode;
 use tiny_soft_renderer::color::Color;
-use tiny_soft_renderer::math::{Vec2u, Vec3f};
+use tiny_soft_renderer::math::{Vec2u, Vec3};
 use tiny_soft_renderer::model::Model;
 use tiny_soft_renderer::renderer::Renderer;
 use tiny_soft_renderer::texture::Texture;
@@ -49,7 +49,7 @@ fn draw(model: &Model, renderer: &mut Renderer, draw_mode: DrawMode) {
     let half_width = renderer.width() as f32 / 2.0;
     let half_height = renderer.height() as f32 / 2.0;
 
-    let light_dir = Vec3f {
+    let light_dir = Vec3 {
         x: 0.0,
         y: 0.0,
         z: -1.0,
@@ -65,7 +65,7 @@ fn draw(model: &Model, renderer: &mut Renderer, draw_mode: DrawMode) {
         // points of the triangle
         let world_coords = [v0, v1, v2];
 
-        let screen_coords = world_coords.map(|v| Vec3f {
+        let screen_coords = world_coords.map(|v| Vec3 {
             x: (v.x + 1.0) * half_width,
             y: (v.y + 1.0) * half_height,
             z: v.z,

@@ -1,5 +1,5 @@
 use crate::color::Color;
-use crate::math::{Vec2f, Vec2u, Vec3, Vec3f};
+use crate::math::{TVec3, Vec2, Vec2u, Vec3};
 use crate::texture::Texture;
 
 pub struct Renderer {
@@ -89,8 +89,8 @@ impl Renderer {
         }
     }
 
-    pub fn barycentric(t0: &Vec3f, t1: &Vec3f, t2: &Vec3f, p: &Vec3f) -> Vec3f {
-        let mut s = [Vec3f::default(); 2];
+    pub fn barycentric(t0: &Vec3, t1: &Vec3, t2: &Vec3, p: &Vec3) -> Vec3 {
+        let mut s = [Vec3::default(); 2];
         for i in 0..2 {
             s[i].x = t2[i] - t0[i];
             s[i].y = t1[i] - t0[i];
@@ -99,14 +99,14 @@ impl Renderer {
         let u = s[0].cross(&s[1]);
         // dont forget that u[2] is integer. If it is zero then triangle ABC is degenerate
         if u.z.abs() > 1e-2 {
-            Vec3 {
+            TVec3 {
                 x: 1.0 - (u.x + u.y) / u.z,
                 y: u.y / u.z,
                 z: u.x / u.z,
             }
         } else {
             // in this case generate negative coordinates, it will be thrown away by the rasterizator
-            Vec3 {
+            TVec3 {
                 x: -1.0,
                 y: 1.0,
                 z: 1.0,
@@ -115,16 +115,16 @@ impl Renderer {
     }
 
     #[profiling::function]
-    pub fn draw_triangle(&mut self, t0: &Vec3f, t1: &Vec3f, t2: &Vec3f, color: Color) {
-        let mut bbox_min = Vec2f {
+    pub fn draw_triangle(&mut self, t0: &Vec3, t1: &Vec3, t2: &Vec3, color: Color) {
+        let mut bbox_min = Vec2 {
             x: f32::MAX,
             y: f32::MAX,
         };
-        let mut bbox_max = Vec2f {
+        let mut bbox_max = Vec2 {
             x: -f32::MAX,
             y: -f32::MAX,
         };
-        let clamp = Vec2f {
+        let clamp = Vec2 {
             x: self.width as f32 - 1.0,
             y: self.height as f32 - 1.0,
         };
@@ -137,7 +137,7 @@ impl Renderer {
         }
         for x in bbox_min.x as u32..=bbox_max.x as u32 {
             for y in bbox_min.y as u32..=bbox_max.y as u32 {
-                let p = Vec3f {
+                let p = Vec3 {
                     x: x as f32,
                     y: y as f32,
                     z: 0.0,
@@ -160,23 +160,23 @@ impl Renderer {
     #[profiling::function]
     pub fn draw_triangle_uv(
         &mut self,
-        t0: &Vec3f,
-        t1: &Vec3f,
-        t2: &Vec3f,
-        uv0: &Vec2f,
-        uv1: &Vec2f,
-        uv2: &Vec2f,
+        t0: &Vec3,
+        t1: &Vec3,
+        t2: &Vec3,
+        uv0: &Vec2,
+        uv1: &Vec2,
+        uv2: &Vec2,
         diffuse: &Texture,
     ) {
-        let mut bbox_min = Vec2f {
+        let mut bbox_min = Vec2 {
             x: f32::MAX,
             y: f32::MAX,
         };
-        let mut bbox_max = Vec2f {
+        let mut bbox_max = Vec2 {
             x: -f32::MAX,
             y: -f32::MAX,
         };
-        let clamp = Vec2f {
+        let clamp = Vec2 {
             x: self.width as f32 - 1.0,
             y: self.height as f32 - 1.0,
         };
@@ -190,7 +190,7 @@ impl Renderer {
 
         for x in bbox_min.x as u32..=bbox_max.x as u32 {
             for y in bbox_min.y as u32..=bbox_max.y as u32 {
-                let p = Vec3f {
+                let p = Vec3 {
                     x: x as f32,
                     y: y as f32,
                     z: 0.0,
