@@ -2,10 +2,14 @@ mod common;
 
 use sdl2::keyboard::Scancode;
 use tiny_soft_renderer::color::Color;
-use tiny_soft_renderer::math::{Vec2u, Vec3, vec3};
+use tiny_soft_renderer::math::{vec3, Vec2u, Vec3};
 use tiny_soft_renderer::model::Model;
 use tiny_soft_renderer::renderer::Renderer;
 use tiny_soft_renderer::texture::Texture;
+
+const WIDTH: u32 = 800;
+const HEIGHT: u32 = 800;
+const WINDOW_SCALE: u32 = 1;
 
 enum DrawMode {
     Diffuse,
@@ -16,18 +20,15 @@ enum DrawMode {
 
 fn main() {
     let title = "Playground, press A/S/D to change shading mode";
-    let width = 800;
-    let height = 800;
-    let window_scale = 1;
-    let mut renderer = Renderer::new(width, height, true);
+    let mut renderer = Renderer::new(WIDTH, HEIGHT, true);
     let diffuse = Texture::load_tga_texture("assets/textures/african_head_diffuse.tga").unwrap();
     let model = Model::load_obj_model("assets/models/african_head.obj", diffuse).unwrap();
 
     common::run(
         title,
-        width,
-        height,
-        window_scale,
+        WIDTH,
+        HEIGHT,
+        WINDOW_SCALE,
         &mut renderer,
         |renderer, window| {
             let mut draw_mode = DrawMode::Diffuse;

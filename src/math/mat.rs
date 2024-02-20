@@ -43,10 +43,9 @@ impl Mat4f {
         let mut res = Self::identity();
         for i in 0..4 {
             for j in 0..4 {
-                res[(i, j)] = self[(i, 0)] * rhs[(0, j)]
-                    + self[(i, 1)] * rhs[(1, j)]
-                    + self[(i, 2)] * rhs[(2, j)]
-                    + self[(i, 3)] * rhs[(3, j)];
+                for k in 0..4 {
+                    res[(i, j)] += self[(i, k)] * rhs[(k, j)];
+                }
             }
         }
         res
