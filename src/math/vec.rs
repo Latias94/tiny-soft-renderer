@@ -264,7 +264,6 @@ impl_vec_type_conversion!(Vec3, f32, u32, x, y, z);
 impl_vec_type_conversion!(Vec4, f32, u32, x, y, z, w);
 
 impl<T: Number> Vec3<T> {
-    #[inline]
     pub fn cross(self, rhs: &Self) -> Self {
         Vec3 {
             x: self.y * rhs.z - self.z * rhs.y,
@@ -385,7 +384,6 @@ impl_vec_common_methods!(Vec4, i32, x, y, z, w);
 macro_rules! impl_vec_common_methods_for_not_f32 {
     ($VecType:ident, $T:ty, $($field:ident),+) => {
         impl $VecType<$T> {
-            #[inline]
             pub fn dot(&self, rhs: &$VecType<$T>) -> $T {
                 let mut result = 0 as $T;
                 $(result += self.$field * rhs.$field;)+
@@ -408,7 +406,6 @@ impl_vec_common_methods_for_not_f32!(Vec4, i32, x, y, z, w);
 macro_rules! impl_vec_common_methods_for_f32 {
     ($VecType:ident, $($field:ident),+) => {
         impl $VecType<f32> {
-            #[inline]
             pub fn dot(&self, rhs: &$VecType<f32>) -> f32 {
                 let mut result = 0 as f32;
                 $(result += self.$field * rhs.$field;)+
