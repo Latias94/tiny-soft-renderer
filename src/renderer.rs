@@ -1,5 +1,5 @@
 use crate::color::Color;
-use crate::math::{TVec3, Vec2, Vec2u, Vec3};
+use crate::math::{Vec2, Vec2u, Vec3};
 use crate::texture::Texture;
 
 pub struct Renderer {
@@ -7,7 +7,7 @@ pub struct Renderer {
     height: u32,
     flip_y: bool,
     pixels: Vec<Color>,
-    y_buffer: Vec<i32>,
+    z_buffer: Vec<i32>,
 }
 
 impl Renderer {
@@ -17,7 +17,7 @@ impl Renderer {
             height,
             flip_y,
             pixels: vec![Color::WHITE; (width * height) as usize],
-            y_buffer: vec![-i32::MAX; (width * height) as usize],
+            z_buffer: vec![-i32::MAX; (width * height) as usize],
         }
     }
 
@@ -52,7 +52,7 @@ impl Renderer {
 
     pub fn clear(&mut self, color: Color) {
         self.pixels = vec![color; (self.width * self.height) as usize];
-        self.y_buffer = vec![-i32::MAX; (self.width * self.height) as usize];
+        self.z_buffer = vec![-i32::MAX; (self.width * self.height) as usize];
     }
 
     pub fn draw_line(&mut self, v0: &Vec2u, v1: &Vec2u, color: Color) {
@@ -99,14 +99,14 @@ impl Renderer {
         let u = s[0].cross(&s[1]);
         // dont forget that u[2] is integer. If it is zero then triangle ABC is degenerate
         if u.z.abs() > 1e-2 {
-            TVec3 {
+            Vec3 {
                 x: 1.0 - (u.x + u.y) / u.z,
                 y: u.y / u.z,
                 z: u.x / u.z,
             }
         } else {
             // in this case generate negative coordinates, it will be thrown away by the rasterizator
-            TVec3 {
+            Vec3 {
                 x: -1.0,
                 y: 1.0,
                 z: 1.0,
@@ -148,8 +148,8 @@ impl Renderer {
                     continue;
                 }
                 let index = (y * self.width + x) as usize;
-                if self.y_buffer[index] < p.z as i32 {
-                    self.y_buffer[index] = p.z as i32;
+                if self.z_buffer[index] < p.z as i32 {
+                    self.z_buffer[index] = p.z as i32;
                     self.draw_pixel(x, y, color);
                 }
             }
@@ -202,8 +202,8 @@ impl Renderer {
                     continue;
                 }
                 let index = (y * self.width + x) as usize;
-                if self.y_buffer[index] < p.z as i32 {
-                    self.y_buffer[index] = p.z as i32;
+                if self.z_buffer[index] < p.z as i32 {
+                    self.z_buffer[index] = p.z as i32;
                     //  interpolate uv coordinates using barycentric coordinates
                     let uv = *uv0 * bc_screen.x + *uv1 * bc_screen.y + *uv2 * bc_screen.z;
                     let mut color = diffuse.get_color(&uv);

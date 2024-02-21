@@ -2,7 +2,7 @@ mod common;
 
 use sdl2::keyboard::Scancode;
 use tiny_soft_renderer::color::Color;
-use tiny_soft_renderer::math::{vec3, Mat4, Mat4x1, TVec3, Vec2u, Vec3, Vec3f};
+use tiny_soft_renderer::math::{vec3, Mat4, Mat4x1, Vec2u, Vec3};
 use tiny_soft_renderer::model::Model;
 use tiny_soft_renderer::renderer::Renderer;
 use tiny_soft_renderer::texture::Texture;
@@ -24,7 +24,7 @@ enum DrawMode {
 }
 
 fn main() {
-    let title = "Playground, press A/S/D to change shading mode";
+    let title = "Playground, press A/W/S/D to change shading mode";
     let mut renderer = Renderer::new(WIDTH, HEIGHT, true);
     let diffuse = Texture::load_tga_texture("assets/textures/african_head_diffuse.tga").unwrap();
     let model = Model::load_obj_model("assets/models/african_head.obj", diffuse).unwrap();
@@ -102,7 +102,7 @@ fn draw(model: &Model, renderer: &mut Renderer, draw_mode: DrawMode) {
                         .to_vec3()
                 });
                 diffuse_shading(
-                    &model,
+                    model,
                     renderer,
                     &light_dir,
                     index,
@@ -112,7 +112,7 @@ fn draw(model: &Model, renderer: &mut Renderer, draw_mode: DrawMode) {
             }
             DrawMode::Diffuse => {
                 diffuse_shading(
-                    &model,
+                    model,
                     renderer,
                     &light_dir,
                     index,
@@ -162,11 +162,11 @@ fn draw(model: &Model, renderer: &mut Renderer, draw_mode: DrawMode) {
 }
 
 fn diffuse_shading(
-    model: &&Model,
+    model: &Model,
     renderer: &mut Renderer,
-    light_dir: &TVec3<f32>,
+    light_dir: &Vec3,
     index: &[u32],
-    world_coords: &[Vec3f; 3],
+    world_coords: &[Vec3; 3],
     screen_coords: &[Vec3; 3],
 ) {
     let normal = (world_coords[2] - world_coords[0])
