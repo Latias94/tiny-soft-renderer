@@ -2,7 +2,7 @@ mod common;
 
 use sdl2::keyboard::Scancode;
 use tiny_soft_renderer::color::Color;
-use tiny_soft_renderer::math::{vec3, Vec2u, Vec3};
+use tiny_soft_renderer::math::{vec3, Mat4, Mat4x1, TVec3, Vec2u, Vec3, Vec3f};
 use tiny_soft_renderer::model::Model;
 use tiny_soft_renderer::renderer::Renderer;
 use tiny_soft_renderer::texture::Texture;
@@ -11,7 +11,12 @@ const WIDTH: u32 = 800;
 const HEIGHT: u32 = 800;
 const WINDOW_SCALE: u32 = 1;
 
+const DEPTH: f32 = 255.0;
+
+const CAMERA_POSITION: Vec3 = vec3(0.0, 0.0, 3.0);
+
 enum DrawMode {
+    DiffusePerspective,
     Diffuse,
     Flat,
     RandomColor,
@@ -31,13 +36,15 @@ fn main() {
         WINDOW_SCALE,
         &mut renderer,
         |renderer, window| {
-            let mut draw_mode = DrawMode::Diffuse;
+            let mut draw_mode = DrawMode::DiffusePerspective;
             if window.is_key_pressed(Scancode::A) {
                 draw_mode = DrawMode::Flat;
             } else if window.is_key_pressed(Scancode::S) {
                 draw_mode = DrawMode::RandomColor;
             } else if window.is_key_pressed(Scancode::D) {
                 draw_mode = DrawMode::Wireframe;
+            } else if window.is_key_pressed(Scancode::W) {
+                draw_mode = DrawMode::Diffuse;
             }
             draw(&model, renderer, draw_mode);
         },
@@ -45,11 +52,30 @@ fn main() {
     .unwrap();
 }
 
+fn viewport(x: i32, y: i32, width: i32, height: i32) -> Mat4 {
+    let mut m = Mat4::identity();
+    m[(0, 3)] = x as f32 + width as f32 / 2.0;
+    m[(1, 3)] = y as f32 + height as f32 / 2.0;
+    m[(2, 3)] = DEPTH / 2.0;
+    m[(0, 0)] = width as f32 / 2.0;
+    m[(1, 1)] = height as f32 / 2.0;
+    m[(2, 2)] = DEPTH / 2.0;
+    m
+}
+
 fn draw(model: &Model, renderer: &mut Renderer, draw_mode: DrawMode) {
     renderer.clear(Color::BLACK);
     let half_width = renderer.width() as f32 / 2.0;
     let half_height = renderer.height() as f32 / 2.0;
     let light_dir = vec3(0.0, 0.0, -1.0);
+    let viewport = viewport(
+        (renderer.width() as f32 / 8.0) as i32,
+        (renderer.height() as f32 / 8.0) as i32,
+        (renderer.width() as f32 * 0.75) as i32,
+        (renderer.height() as f32 * 0.75) as i32,
+    );
+    let mut projection = Mat4::identity();
+    projection[(3, 2)] = -1.0 / CAMERA_POSITION.z;
 
     for index in model.indices.chunks(3) {
         let [v0, v1, v2] = [
@@ -68,29 +94,31 @@ fn draw(model: &Model, renderer: &mut Renderer, draw_mode: DrawMode) {
         });
 
         match draw_mode {
+            DrawMode::DiffusePerspective => {
+                let screen_coords = world_coords.map(|v| {
+                    viewport
+                        .mul(&projection)
+                        .mul_mat41(&Mat4x1::from(v))
+                        .to_vec3()
+                });
+                diffuse_shading(
+                    &model,
+                    renderer,
+                    &light_dir,
+                    index,
+                    &world_coords,
+                    &screen_coords,
+                );
+            }
             DrawMode::Diffuse => {
-                let normal = (world_coords[2] - world_coords[0])
-                    .cross(&(world_coords[1] - world_coords[0]))
-                    .normalize();
-                let intensity = normal.dot(&light_dir);
-                if intensity > 0.0 {
-                    let uvs = [
-                        model.vertices[index[0] as usize].uv,
-                        model.vertices[index[1] as usize].uv,
-                        model.vertices[index[2] as usize].uv,
-                    ];
-
-                    renderer.draw_triangle_uv(
-                        &screen_coords[0],
-                        &screen_coords[1],
-                        &screen_coords[2],
-                        &uvs[0],
-                        &uvs[1],
-                        &uvs[2],
-                        &model.diffuse,
-                        intensity,
-                    );
-                }
+                diffuse_shading(
+                    &model,
+                    renderer,
+                    &light_dir,
+                    index,
+                    &world_coords,
+                    &screen_coords,
+                );
             }
             DrawMode::Flat => {
                 let normal = (world_coords[2] - world_coords[0])
@@ -130,5 +158,37 @@ fn draw(model: &Model, renderer: &mut Renderer, draw_mode: DrawMode) {
                 renderer.draw_line(&screen_coords_2d[2], &screen_coords_2d[0], Color::WHITE);
             }
         }
+    }
+}
+
+fn diffuse_shading(
+    model: &&Model,
+    renderer: &mut Renderer,
+    light_dir: &TVec3<f32>,
+    index: &[u32],
+    world_coords: &[Vec3f; 3],
+    screen_coords: &[Vec3; 3],
+) {
+    let normal = (world_coords[2] - world_coords[0])
+        .cross(&(world_coords[1] - world_coords[0]))
+        .normalize();
+    let intensity = normal.dot(&light_dir);
+    if intensity > 0.0 {
+        let uvs = [
+            model.vertices[index[0] as usize].uv,
+            model.vertices[index[1] as usize].uv,
+            model.vertices[index[2] as usize].uv,
+        ];
+
+        renderer.draw_triangle_uv(
+            &screen_coords[0],
+            &screen_coords[1],
+            &screen_coords[2],
+            &uvs[0],
+            &uvs[1],
+            &uvs[2],
+            &model.diffuse,
+            intensity,
+        );
     }
 }

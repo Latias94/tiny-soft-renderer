@@ -419,15 +419,15 @@ impl_vec_common_methods_for_f32!(TVec2, x, y);
 impl_vec_common_methods_for_f32!(TVec3, x, y, z);
 impl_vec_common_methods_for_f32!(TVec4, x, y, z, w);
 
-pub fn vec2<T: Number>(x: T, y: T) -> TVec2<T> {
+pub const fn vec2<T: Number>(x: T, y: T) -> TVec2<T> {
     TVec2 { x, y }
 }
 
-pub fn vec3<T: Number>(x: T, y: T, z: T) -> TVec3<T> {
+pub const fn vec3<T: Number>(x: T, y: T, z: T) -> TVec3<T> {
     TVec3 { x, y, z }
 }
 
-pub fn vec4<T: Number>(x: T, y: T, z: T, w: T) -> TVec4<T> {
+pub const fn vec4<T: Number>(x: T, y: T, z: T, w: T) -> TVec4<T> {
     TVec4 { x, y, z, w }
 }
 

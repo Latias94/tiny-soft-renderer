@@ -236,6 +236,30 @@ impl Mat4x1 {
     pub fn as_slice_mut(&mut self) -> &mut [f32; 4] {
         &mut self.m
     }
+
+    pub const fn from_vec3(v: Vec3) -> Self {
+        Self::new([v.x, v.y, v.z, 1.0])
+    }
+
+    pub const fn from_vec4(v: Vec4) -> Self {
+        Self::new([v.x, v.y, v.z, v.w])
+    }
+
+    pub fn to_vec3(&self) -> Vec3 {
+        let x = self[0];
+        let y = self[1];
+        let z = self[2];
+        let w = self[3];
+        Vec3::new(x / w, y / w, z / w)
+    }
+
+    pub fn to_vec4(&self) -> Vec4 {
+        let x = self[0];
+        let y = self[1];
+        let z = self[2];
+        let w = self[3];
+        Vec4::new(x, y, z, w)
+    }
 }
 
 impl From<[f32; 4]> for Mat4x1 {
@@ -253,6 +277,18 @@ impl From<Vec3> for Mat4x1 {
 impl From<Vec4> for Mat4x1 {
     fn from(v: Vec4) -> Self {
         Self::new([v.x, v.y, v.z, v.w])
+    }
+}
+
+impl Into<Vec3> for Mat4x1 {
+    fn into(self) -> Vec3 {
+        Vec3::from([self[0], self[1], self[2]])
+    }
+}
+
+impl Into<Vec4> for Mat4x1 {
+    fn into(self) -> Vec4 {
+        Vec4::from([self[0], self[1], self[2], self[3]])
     }
 }
 
@@ -438,5 +474,21 @@ mod tests {
         ]);
         let result = m44.mul_mat41(&m);
         assert_eq!(result, Mat4x1::from([30.0, 70.0, 110.0, 150.0]));
+
+        let m = Mat4x1::from([1.0, 2.0, 3.0, 4.0]);
+        let v = Vec4::from([1.0, 2.0, 3.0, 4.0]);
+        assert_eq!(m.to_vec4(), v);
+
+        let m = Mat4x1::from([1.0, 2.0, 3.0, 4.0]);
+        let v = Vec3::from([1.0, 2.0, 3.0]);
+        assert_eq!(m.to_vec3(), v);
+
+        let v = Vec4::from([1.0, 2.0, 3.0, 4.0]);
+        let m = Mat4x1::from(v);
+        assert_eq!(m, Mat4x1::from([1.0, 2.0, 3.0, 4.0]));
+
+        let v = Vec3::from([1.0, 2.0, 3.0]);
+        let m = Mat4x1::from(v);
+        assert_eq!(m, Mat4x1::from([1.0, 2.0, 3.0, 1.0]));
     }
 }
