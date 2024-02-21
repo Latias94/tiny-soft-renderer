@@ -265,7 +265,7 @@ impl_vec_type_conversion!(TVec4, f32, u32, x, y, z, w);
 
 impl<T: Number> TVec3<T> {
     pub fn cross(self, rhs: &Self) -> Self {
-        TVec3 {
+        Self {
             x: self.y * rhs.z - self.z * rhs.y,
             y: self.z * rhs.x - self.x * rhs.z,
             z: self.x * rhs.y - self.y * rhs.x,
@@ -389,6 +389,12 @@ macro_rules! impl_vec_common_methods_for_not_f32 {
                 $(result += self.$field * rhs.$field;)+
                 result
             }
+
+            pub fn to_vec_f32(&self) -> $VecType<f32> {
+                $VecType {
+                    $($field: self.$field as f32,)+
+                }
+            }
         }
     };
 }
@@ -410,6 +416,12 @@ macro_rules! impl_vec_common_methods_for_f32 {
                 let mut result = 0 as f32;
                 $(result += self.$field * rhs.$field;)+
                 result
+            }
+            
+            pub fn cast_to_vec_i32(&self) -> $VecType<i32> {
+                $VecType {
+                    $($field: self.$field as i32,)+
+                }
             }
         }
     };

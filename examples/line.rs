@@ -6,7 +6,7 @@ use tiny_soft_renderer::math::Vec2u;
 use tiny_soft_renderer::renderer::Renderer;
 
 fn main() {
-    let title = "Playground";
+    let title = "Line";
     let width = 800;
     let height = 800;
     let window_scale = 1;
